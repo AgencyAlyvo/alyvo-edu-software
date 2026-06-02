@@ -1,0 +1,67 @@
+Alyvo - Licence d'utilisation
+Licence propriétaire de logiciel
+
+Copyright (c) 2026 Alyvo. Tous droits réservés.
+
+1. Propriété et droits d'auteur
+   Le logiciel, les scripts, outils, interfaces, bases de données, documentations et éléments associés fournis par Alyvo dans le cadre de ses solutions de prospection automatisée, ci-après désignés "le Logiciel", sont la propriété exclusive d'Alyvo, sauf mention contraire.
+
+   Le Logiciel est protégé par les lois relatives au droit d'auteur, à la propriété intellectuelle et par les traités internationaux applicables. Tous les droits non expressément accordés dans la présente licence sont réservés par Alyvo.
+
+2. Octroi de licence
+   Alyvo vous accorde une licence limitée, non exclusive, non transférable, révocable et personnelle d'utilisation du Logiciel.
+
+   Cette licence vous autorise à utiliser le Logiciel uniquement dans le cadre prévu par Alyvo, notamment pour des activités de prospection automatisée, de recherche de prospects, d'organisation de données commerciales ou d'assistance à la prospection, conformément aux lois applicables.
+
+3. Restrictions
+   Vous n'êtes pas autorisé à :
+   - Copier, modifier, distribuer, vendre, louer, concéder en sous-licence ou exploiter commercialement le Logiciel sans autorisation écrite préalable d'Alyvo.
+   - Procéder à de l'ingénierie inverse, décompiler, désassembler ou tenter d'extraire le code source du Logiciel, sauf si la loi applicable l'autorise expressément.
+   - Supprimer, modifier ou masquer les mentions de propriété, de droit d'auteur, de marque ou toute autre mention légale présente dans le Logiciel.
+   - Utiliser le Logiciel à des fins illégales, frauduleuses, abusives, trompeuses ou non autorisées.
+   - Utiliser le Logiciel pour envoyer des messages non sollicités, du spam, ou pour collecter, traiter ou exploiter des données personnelles en violation du RGPD ou de toute autre réglementation applicable.
+   - Contourner les limitations techniques, systèmes de sécurité, restrictions d'accès ou mécanismes de contrôle intégrés au Logiciel.
+
+4. Utilisation responsable et conformité
+   L'utilisateur est seul responsable de son utilisation du Logiciel et s'engage à respecter toutes les lois et réglementations applicables, notamment celles relatives :
+   - à la protection des données personnelles ;
+   - au RGPD ;
+   - à la prospection commerciale ;
+   - au consentement, à l'information des personnes et au droit d'opposition ;
+   - aux règles applicables aux communications électroniques.
+
+   Alyvo ne peut être tenue responsable d'une utilisation non conforme, abusive ou illégale du Logiciel par l'utilisateur.
+
+5. Mises à jour et support
+   Alyvo peut fournir, à sa seule discrétion, des mises à jour, corrections, améliorations ou nouvelles fonctionnalités du Logiciel.
+
+   Alyvo n'est pas tenue de fournir une maintenance, une assistance technique ou des mises à jour, sauf accord écrit distinct.
+
+6. Résiliation
+   La présente licence reste en vigueur jusqu'à sa résiliation.
+
+   Alyvo peut résilier cette licence à tout moment en cas de non-respect de ses conditions. En cas de résiliation, vous devez cesser immédiatement toute utilisation du Logiciel et supprimer toutes les copies en votre possession.
+
+7. Absence de garantie
+   Le Logiciel est fourni "en l'état", sans garantie d'aucune sorte, expresse ou implicite.
+
+   Alyvo ne garantit pas que le Logiciel sera exempt d'erreurs, ininterrompu, sécurisé, compatible avec tous les systèmes, ni qu'il répondra à des besoins spécifiques ou produira des résultats commerciaux déterminés.
+
+8. Limitation de responsabilité
+   Dans toute la mesure permise par la loi applicable, Alyvo ne pourra être tenue responsable des dommages indirects, pertes de données, pertes de chiffre d'affaires, pertes de prospects, pertes de bénéfices, interruptions d'activité ou tout autre préjudice résultant de l'utilisation ou de l'impossibilité d'utiliser le Logiciel.
+
+9. Données et confidentialité
+   Lorsque le Logiciel implique le traitement de données, l'utilisateur reste responsable de la légalité des données utilisées, importées, collectées ou traitées.
+
+   L'utilisateur s'engage à ne pas utiliser le Logiciel pour traiter des données obtenues illégalement ou sans base légale appropriée.
+
+10. Droit applicable
+   La présente licence est régie par le droit français.
+
+   Tout litige relatif à l'interprétation, l'exécution ou la validité de la présente licence sera soumis aux juridictions françaises compétentes, sauf disposition légale impérative contraire.
+
+11. Contact
+   Pour toute question concernant cette licence, vous pouvez contacter Alyvo à l'adresse suivante :
+   contact@alyvo.fr
+
+En installant, copiant, accédant ou utilisant le Logiciel, vous reconnaissez avoir lu, compris et accepté les conditions de la présente licence.

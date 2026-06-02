@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": [
+    "src-core/**/*",
+    "src-nuxt/**/*.ts",
+    "src-nuxt/**/*.tsx",
+    "src-nuxt/**/*.vue",
+    "src-nuxt/.nuxt/**/*.d.ts",
+    "tests/**/*",
+    "cypress/**/*",
+    "vitest.config.ts",
+    "tailwind.config.ts",
+    "cypress.config.ts",
+    "eslint.config.js",
+    "prettier.config.js"
+  ],
+  "exclude": ["node_modules", "src-nuxt/node_modules", "src-nuxt/.output", ".output", "dist", "dist-ssr", "coverage"]
+}

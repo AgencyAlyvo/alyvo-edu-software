@@ -1,0 +1,161 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Alyvo ProspectResearch",
+  "mainBinaryName": "AlyvoProspectResearch",
+  "version": "0.0.0",
+  "identifier": "fr.alyvo.prospectresearch",
+  "build": {
+    "frontendDist": "../src-nuxt/.output/public/",
+    "devUrl": "http://localhost:1470",
+    "beforeDevCommand": "tsx src-tauri/scripts/beforeDevCommand.ts",
+    "beforeBuildCommand": "tsx src-tauri/scripts/beforeBuildCommand.ts"
+  },
+  "app": {
+    "windows": [
+      {
+        "fullscreen": false,
+        "width": 290,
+        "height": 380,
+        "resizable": false,
+        "title": "Alyvo ProspectResearch",
+        "decorations": false,
+        "center": true,
+        "alwaysOnTop": false,
+        "visible": true,
+        "url": "/",
+        "label": "main"
+      }
+    ],
+    "enableGTKAppId": false,
+    "macOSPrivateApi": true,
+    "security": {
+      "csp": {
+        "default-src": "'self' customprotocol: asset:",
+        "connect-src": [
+          "ipc:",
+          "http://ipc.localhost",
+          "https://staging.api.prospectresearch.alyvo.fr",
+          "https://api.prospectresearch.alyvo.fr",
+          "https://s3.gra.io.cloud.ovh.net",
+          "https://*.s3.gra.io.cloud.ovh.net"
+        ],
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": [
+          "'self'",
+          "asset:",
+          "http://asset.localhost",
+          "data:",
+          "blob:",
+          "https://staging.api.prospectresearch.alyvo.fr",
+          "https://api.prospectresearch.alyvo.fr",
+          "https://s3.gra.io.cloud.ovh.net",
+          "https://*.s3.gra.io.cloud.ovh.net"
+        ],
+        "media-src": [
+          "'self'",
+          "asset:",
+          "http://asset.localhost",
+          "data:",
+          "blob:",
+          "https://staging.api.prospectresearch.alyvo.fr",
+          "https://api.prospectresearch.alyvo.fr",
+          "https://s3.gra.io.cloud.ovh.net",
+          "https://*.s3.gra.io.cloud.ovh.net"
+        ],
+        "font-src": "'self'",
+        "object-src": "'none'",
+        "frame-src": "'none'"
+      },
+      "assetProtocol": {
+        "enable": false,
+        "scope": []
+      },
+      "capabilities": ["default"],
+      "dangerousDisableAssetCspModification": false,
+      "freezePrototype": false,
+      "headers": {
+        "X-Content-Type-Options": "nosniff"
+      },
+      "pattern": {
+        "use": "brownfield"
+      }
+    },
+    "withGlobalTauri": false
+  },
+  "bundle": {
+    "createUpdaterArtifacts": true,
+    "active": true,
+    "category": "Business",
+    "copyright": "Alyvo",
+    "longDescription": "Alyvo Prospect Research is a desktop application that allows you to prospect automatically.",
+    "shortDescription": "Alyvo Prospect Research is a desktop application that allows you to prospect automatically.",
+    "license": "Proprietary",
+    "licenseFile": "./legal/LICENSE.txt",
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/64x64.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico",
+      "icons/icon.png"
+    ],
+    "publisher": "Alyvo",
+    "resources": [],
+    "externalBin": [],
+    "fileAssociations": [],
+    "homepage": "https://alyvo.fr",
+    "useLocalToolsDir": false,
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true,
+        "files": {}
+      },
+      "deb": {
+        "files": {}
+      },
+      "rpm": {
+        "epoch": 0,
+        "files": {},
+        "release": "1"
+      }
+    },
+    "macOS": {
+      "minimumSystemVersion": "15.0",
+      "files": {},
+      "hardenedRuntime": true,
+      "entitlements": null,
+      "exceptionDomain": "staging.api.prospectresearch.alyvo.fr api.prospectresearch.alyvo.fr",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null,
+      "dmg": {}
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "silent": true,
+        "type": "offlineInstaller"
+      },
+      "allowDowngrades": false,
+      "nsis": null,
+      "wix": null
+    }
+  },
+  "plugins": {
+    "fs": {
+      "requireLiteralLeadingDot": false
+    },
+    "updater": {
+      "windows": {
+        "installMode": "passive"
+      },
+      "active": true,
+      "endpoints": ["https://api.prospectresearch.alyvo.fr/software/updater/{{target}}/{{arch}}/{{current_version}}"],
+      "dialog": false,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE5NjU0QjdDQTI1Njk4MDYKUldRR21GYWlmRXRsR2Faekh4WGJSeVR4czJkTFZFSzI0enVtaGxxc2dNWm9yZG1nN0ZIU2Q3NXQK",
+      "dangerousInsecureTransportProtocol": false
+    }
+  }
+}
