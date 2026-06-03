@@ -211,51 +211,51 @@ jobs:
       - name: Rename file - Windows (x64)
         if: matrix.platform == 'windows-2025-vs2026'
         run: |
-          mv src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\*.msi src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\AlyvoProspectResearchSetup_x64.msi
-          mv src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\*.exe src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\AlyvoProspectResearchSetup_x64.exe
-          mv src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\*.msi.sig src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\AlyvoProspectResearchSetup_x64.msi.sig
-          mv src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\*.exe.sig src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\AlyvoProspectResearchSetup_x64.exe.sig
+          mv src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\*.msi src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\AlyvoEduSetup_x64.msi
+          mv src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\*.exe src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\AlyvoEduSetup_x64.exe
+          mv src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\*.msi.sig src-tauri\target\x86_64-pc-windows-msvc\release\bundle\msi\AlyvoEduSetup_x64.msi.sig
+          mv src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\*.exe.sig src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis\AlyvoEduSetup_x64.exe.sig
 
       - name: Rename file - Windows (arm64)
         if: matrix.platform == 'windows-11-arm'
         run: |
-          mv src-tauri\target\aarch64-pc-windows-msvc\release\bundle\msi\*.msi src-tauri\target\aarch64-pc-windows-msvc\release\bundle\msi\AlyvoProspectResearchSetup_arm64.msi
-          mv src-tauri\target\aarch64-pc-windows-msvc\release\bundle\nsis\*.exe src-tauri\target\aarch64-pc-windows-msvc\release\bundle\nsis\AlyvoProspectResearchSetup_arm64.exe
-          mv src-tauri\target\aarch64-pc-windows-msvc\release\bundle\msi\*.msi.sig src-tauri\target\aarch64-pc-windows-msvc\release\bundle\msi\AlyvoProspectResearchSetup_arm64.msi.sig
-          mv src-tauri\target\aarch64-pc-windows-msvc\release\bundle\nsis\*.exe.sig src-tauri\target\aarch64-pc-windows-msvc\release\bundle\nsis\AlyvoProspectResearchSetup_arm64.exe.sig
+          mv src-tauri\target\aarch64-pc-windows-msvc\release\bundle\msi\*.msi src-tauri\target\aarch64-pc-windows-msvc\release\bundle\msi\AlyvoEduSetup_arm64.msi
+          mv src-tauri\target\aarch64-pc-windows-msvc\release\bundle\nsis\*.exe src-tauri\target\aarch64-pc-windows-msvc\release\bundle\nsis\AlyvoEduSetup_arm64.exe
+          mv src-tauri\target\aarch64-pc-windows-msvc\release\bundle\msi\*.msi.sig src-tauri\target\aarch64-pc-windows-msvc\release\bundle\msi\AlyvoEduSetup_arm64.msi.sig
+          mv src-tauri\target\aarch64-pc-windows-msvc\release\bundle\nsis\*.exe.sig src-tauri\target\aarch64-pc-windows-msvc\release\bundle\nsis\AlyvoEduSetup_arm64.exe.sig
 
       - name: Rename file - Linux (x64)
         if: matrix.platform == 'ubuntu-22.04'
         run: |
-          mv src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.sig src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/AlyvoProspectResearchSetup_x86_64.AppImage.sig
-          mv src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/AlyvoProspectResearchSetup_x86_64.AppImage
-          mv src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/AlyvoProspectResearchSetup_x86_64.deb
-          mv src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.rpm src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/rpm/AlyvoProspectResearchSetup_x86_64.rpm
+          mv src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.sig src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/AlyvoEduSetup_x86_64.AppImage.sig
+          mv src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/AlyvoEduSetup_x86_64.AppImage
+          mv src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/AlyvoEduSetup_x86_64.deb
+          mv src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.rpm src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/rpm/AlyvoEduSetup_x86_64.rpm
 
       - name: Rename file - Linux (arm64)
         if: matrix.platform == 'ubuntu-22.04-arm'
         run: |
-          mv src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.sig src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/appimage/AlyvoProspectResearchSetup_arm64.AppImage.sig
-          mv src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/appimage/*.AppImage src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/appimage/AlyvoProspectResearchSetup_arm64.AppImage
-          mv src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/deb/*.deb src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/deb/AlyvoProspectResearchSetup_arm64.deb
-          mv src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/rpm/*.rpm src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/rpm/AlyvoProspectResearchSetup_arm64.rpm
+          mv src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/appimage/*.AppImage.sig src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/appimage/AlyvoEduSetup_arm64.AppImage.sig
+          mv src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/appimage/*.AppImage src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/appimage/AlyvoEduSetup_arm64.AppImage
+          mv src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/deb/*.deb src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/deb/AlyvoEduSetup_arm64.deb
+          mv src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/rpm/*.rpm src-tauri/target/aarch64-unknown-linux-gnu/release/bundle/rpm/AlyvoEduSetup_arm64.rpm
 
       - name: Rename file - macOS (arm64)
         if: matrix.platform == 'macos-26'
         run: |
-          mv src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoProspectResearchSetup_arm64.app.tar.gz
-          mv src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz.sig src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoProspectResearchSetup_arm64.app.tar.gz.sig
-          mv src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoProspectResearchSetup_arm64.app
-          mv src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/AlyvoProspectResearchSetup_arm64.dmg
+          mv src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoEduSetup_arm64.app.tar.gz
+          mv src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz.sig src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoEduSetup_arm64.app.tar.gz.sig
+          mv src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoEduSetup_arm64.app
+          mv src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/AlyvoEduSetup_arm64.dmg
 
       - name: Verify the signature - macOS (arm64)
         if: matrix.platform == 'macos-26'
         run: |
           # Vérifier la signature de l'application .app
-          codesign --verify --deep --strict --verbose=4 src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoProspectResearchSetup_arm64.app
+          codesign --verify --deep --strict --verbose=4 src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoEduSetup_arm64.app
 
           # Vérifier la signature du fichier .dmg
-          codesign --verify --strict --verbose=4 src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/AlyvoProspectResearchSetup_arm64.dmg
+          codesign --verify --strict --verbose=4 src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/AlyvoEduSetup_arm64.dmg
 
       - name: Store credentials for notarization - macOS (arm64)
         if: matrix.platform == 'macos-26'
@@ -269,18 +269,18 @@ jobs:
         if: matrix.platform == 'macos-26'
         run: |
           mkdir -p notarization
-          zip -r notarization/AlyvoProspectResearchSetup_arm64.app.zip src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoProspectResearchSetup_arm64.app
-          zip -r notarization/AlyvoProspectResearchSetup_arm64.dmg.zip src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/AlyvoProspectResearchSetup_arm64.dmg
+          zip -r notarization/AlyvoEduSetup_arm64.app.zip src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoEduSetup_arm64.app
+          zip -r notarization/AlyvoEduSetup_arm64.dmg.zip src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/AlyvoEduSetup_arm64.dmg
 
       - name: Submit .dmg and .app for notarization + print log if invalid or valid - macOS (arm64)
         if: matrix.platform == 'macos-26'
         run: |
-          xcrun notarytool submit notarization/AlyvoProspectResearchSetup_arm64.app.zip \
+          xcrun notarytool submit notarization/AlyvoEduSetup_arm64.app.zip \
           --keychain-profile login \
           --wait \
           --verbose || (xcrun notarytool log --keychain-profile login --id $(xcrun notarytool history --keychain-profile login --format json | jq -r '.[0].id') && exit 1)
 
-          xcrun notarytool submit notarization/AlyvoProspectResearchSetup_arm64.dmg.zip \
+          xcrun notarytool submit notarization/AlyvoEduSetup_arm64.dmg.zip \
           --keychain-profile login \
           --wait \
           --verbose || (xcrun notarytool log --keychain-profile login --id $(xcrun notarytool history --keychain-profile login --format json | jq -r '.[0].id') && exit 1)
@@ -288,17 +288,17 @@ jobs:
       - name: Staple the notarization ticket - macOS (arm64)
         if: matrix.platform == 'macos-26'
         run: |
-          xcrun stapler staple src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoProspectResearchSetup_arm64.app
-          xcrun stapler staple src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/AlyvoProspectResearchSetup_arm64.dmg
+          xcrun stapler staple src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoEduSetup_arm64.app
+          xcrun stapler staple src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/AlyvoEduSetup_arm64.dmg
 
       - name: Verify the signature and notarization - macOS (arm64)
         if: matrix.platform == 'macos-26'
         run: |
           # Vérifier la signature de l'application .app
-          codesign --verify --deep --strict --verbose=4 src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoProspectResearchSetup_arm64.app
+          codesign --verify --deep --strict --verbose=4 src-tauri/target/aarch64-apple-darwin/release/bundle/macos/AlyvoEduSetup_arm64.app
 
           # Vérifier la signature du fichier .dmg
-          codesign --verify --strict --verbose=4 src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/AlyvoProspectResearchSetup_arm64.dmg
+          codesign --verify --strict --verbose=4 src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/AlyvoEduSetup_arm64.dmg
 
       - name: Upload Artifact - Linux (x64)
         if: matrix.platform == 'ubuntu-22.04'
@@ -493,7 +493,7 @@ jobs:
       - name: Deploy binaries Launcher for all platforms to bucket S3 (OVH)
         run: |
           aws --endpoint-url "$OVH_S3_ENDPOINT" s3 sync \
-            "dist/" "s3://$OVH_S3_BUCKET/prospectresearch/prod/software/download/" \
+            "dist/" "s3://$OVH_S3_BUCKET/edu/prod/software/download/" \
             --delete \
             --exclude "*" \
             --include "*.deb" \
@@ -512,4 +512,4 @@ jobs:
         run: |
           aws --endpoint-url "$OVH_S3_ENDPOINT" s3 cp \
             "dist-updater/updater-manifest.json" \
-            "s3://$OVH_S3_BUCKET/prospectresearch/prod/software/updater/updater-manifest.json"
+            "s3://$OVH_S3_BUCKET/edu/prod/software/updater/updater-manifest.json"

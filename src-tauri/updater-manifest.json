@@ -2,24 +2,24 @@
   "version": "0.0.0",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "Content of AlyvoProspectResearchSetup_arm64.app.tar.gz.sig",
-      "url": "https://api.prospectresearch.alyvo.fr/software/download/AlyvoProspectResearchSetup_arm64.app.tar.gz"
+      "signature": "Content of AlyvoEduSetup_arm64.app.tar.gz.sig",
+      "url": "https://api.edu.alyvo.fr/software/download/AlyvoEduSetup_arm64.app.tar.gz"
     },
     "linux-x86_64": {
-      "signature": "Content of AlyvoProspectResearchSetup_x86_64.AppImage.sig",
-      "url": "https://api.prospectresearch.alyvo.fr/software/download/AlyvoProspectResearchSetup_x86_64.AppImage"
+      "signature": "Content of AlyvoEduSetup_x86_64.AppImage.sig",
+      "url": "https://api.edu.alyvo.fr/software/download/AlyvoEduSetup_x86_64.AppImage"
     },
     "linux-aarch64": {
-      "signature": "Content of AlyvoProspectResearchSetup_arm64.AppImage.sig",
-      "url": "https://api.prospectresearch.alyvo.fr/software/download/AlyvoProspectResearchSetup_arm64.AppImage"
+      "signature": "Content of AlyvoEduSetup_arm64.AppImage.sig",
+      "url": "https://api.edu.alyvo.fr/software/download/AlyvoEduSetup_arm64.AppImage"
     },
     "windows-x86_64": {
-      "signature": "Content of AlyvoProspectResearchSetup_x64.msi.sig",
-      "url": "https://api.prospectresearch.alyvo.fr/software/download/AlyvoProspectResearchSetup_x64.msi"
+      "signature": "Content of AlyvoEduSetup_x64.msi.sig",
+      "url": "https://api.edu.alyvo.fr/software/download/AlyvoEduSetup_x64.msi"
     },
     "windows-aarch64": {
-      "signature": "Content of AlyvoProspectResearchSetup_arm64.msi.sig",
-      "url": "https://api.prospectresearch.alyvo.fr/software/download/AlyvoProspectResearchSetup_arm64.msi"
+      "signature": "Content of AlyvoEduSetup_arm64.msi.sig",
+      "url": "https://api.edu.alyvo.fr/software/download/AlyvoEduSetup_arm64.msi"
     }
   }
 }

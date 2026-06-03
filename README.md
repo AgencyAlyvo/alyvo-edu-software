@@ -1,4 +1,4 @@
-# Alyvo ProspectResearch - Frontend Desktop
+# Alyvo Edu - Frontend Desktop
 
 ## Cursor Rules
 

@@ -27,7 +27,7 @@ export class CredentialsStorageService {
    * Identifiant de l'application injecté par le plugin au démarrage.
    * Détermine le sous-dossier de stockage dans BaseDirectory.Data.
    */
-  private static _identifier: string = 'fr.alyvo.prospectresearch'
+  private static _identifier: string = 'fr.alyvo.edu'
 
   /**
    * Configure l'identifiant de l'application.
