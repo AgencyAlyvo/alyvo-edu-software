@@ -37,7 +37,7 @@
     "lint:ts": "nuxi typecheck src-nuxt --dotenv .env.development",
     "lint:eslint": "eslint .",
     "lint:fix": "prettier --write . && eslint . --fix",
-    "prepare": "husky && nuxi prepare src-nuxt --dotenv .env.development && npm run sidecar:build"
+    "prepare": "husky && nuxi prepare src-nuxt --dotenv .env.development"
   },
   "dependencies": {
     "@nuxt/ui": "^4.8.1",
