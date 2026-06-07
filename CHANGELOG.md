@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/AgencyAlyvo/alyvo-edu-software/compare/v1.0.2...v1.0.3) (2026-06-07)
+
+
+### Bug Fixes
+
+* fixed csp in tauri ([21ee8f3](https://github.com/AgencyAlyvo/alyvo-edu-software/commit/21ee8f34a67c8a484edd6086cf6715aaa7ff87ee))
+
 ## [1.0.2](https://github.com/AgencyAlyvo/alyvo-edu-software/compare/v1.0.1...v1.0.2) (2026-06-07)
 
 
