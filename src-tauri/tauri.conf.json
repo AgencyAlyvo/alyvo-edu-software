@@ -38,7 +38,8 @@
           "https://staging.api.edu.alyvo.fr",
           "https://api.edu.alyvo.fr",
           "https://s3.gra.io.cloud.ovh.net",
-          "https://*.s3.gra.io.cloud.ovh.net"
+          "https://*.s3.gra.io.cloud.ovh.net",
+          "https://api.iconify.design"
         ],
         "script-src": "'self'",
         "style-src": "'self' 'unsafe-inline'",
