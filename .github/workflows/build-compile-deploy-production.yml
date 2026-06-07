@@ -12,6 +12,7 @@ env:
 
   XCODE_VERSION: '26.4.1'
   NODE_VERSION: '24.15.0'
+  PYTHON_VERSION: '3.14.5'
 
   # Certificat Apple au format p12 encodé en base64
   MACOS_APPLE_CERTIFICATE_DEVELOPERIDAPPLICATION_P12_BASE64: ${{ secrets.MACOS_APPLE_CERTIFICATE_DEVELOPERIDAPPLICATION_P12_BASE64 }}
@@ -44,6 +45,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Install Python 3.14.5
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Node.js version LTS and setup cache - All platforms
         uses: actions/setup-node@v6
@@ -377,6 +383,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Install Python 3.14.5
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Get latest release tag
         id: lasttag
