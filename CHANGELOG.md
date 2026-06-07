@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/AgencyAlyvo/alyvo-edu-software/compare/v1.0.0...v1.0.1) (2026-06-07)
+
+
+### Bug Fixes
+
+* fixed ci step python ([fcd10eb](https://github.com/AgencyAlyvo/alyvo-edu-software/commit/fcd10ebe879b093b216b29bf0aa6ee9fe0d61aaa))
+
 ## 1.0.0 (2026-06-07)
 
 
