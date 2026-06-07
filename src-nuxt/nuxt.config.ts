@@ -61,4 +61,9 @@ export default defineNuxtConfig({
       Manrope: [400, 500, 600, 700, 800],
     },
   },
+  icon: {
+    clientBundle: {
+      scan: true, // scanne le code et bundle les icônes utilisées
+    },
+  },
 })
