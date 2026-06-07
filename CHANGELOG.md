@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/AgencyAlyvo/alyvo-edu-software/compare/v1.0.1...v1.0.2) (2026-06-07)
+
+
+### Bug Fixes
+
+* fixed nuxt.config.ts for nuxt ui ([509f64f](https://github.com/AgencyAlyvo/alyvo-edu-software/commit/509f64fd7aeec7c997962d3d49aeab6bb74a2b52))
+
 ## [1.0.1](https://github.com/AgencyAlyvo/alyvo-edu-software/compare/v1.0.0...v1.0.1) (2026-06-07)
 
 
