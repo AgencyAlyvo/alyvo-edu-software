@@ -239,7 +239,7 @@ const signIn: () => Promise<void> = async (): Promise<void> => {
     await saveCredentialsIfNeeded()
     windowTransitionStore.setLoading(true)
     await TauriWindowService.configureMainWindow()
-    await navigateTo('/home')
+    await navigateTo('/home/accounts')
   } catch (error: unknown) {
     console.error('SignIn error:', error)
 

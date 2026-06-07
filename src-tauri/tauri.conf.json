@@ -107,7 +107,7 @@
     ],
     "publisher": "Alyvo",
     "resources": [],
-    "externalBin": [],
+    "externalBin": ["binaries/outlook-creator", "binaries/broward-enrollment", "binaries/broward-student-id"],
     "fileAssociations": [],
     "homepage": "https://alyvo.fr",
     "useLocalToolsDir": false,

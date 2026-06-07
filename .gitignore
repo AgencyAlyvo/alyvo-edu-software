@@ -42,3 +42,10 @@ tests/unit/test-reports/
 cypress/screenshots
 cypress/videos
 cypress/downloads
+
+# Tauri
+src-tauri/target
+sidecar/outlook-creator/build
+sidecar/outlook-creator/dist
+src-tauri/binaries/outlook-creator-*
+!src-tauri/binaries/.gitkeep

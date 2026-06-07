@@ -1,0 +1,1 @@
+C:\Users\Corentin\Desktop\AgencyAlyvo\alyvo-edu\alyvo-edu-software\src-tauri\sidecar-stub\target\release\outlook-creator.exe: C:\Users\Corentin\Desktop\AgencyAlyvo\alyvo-edu\alyvo-edu-software\src-tauri\sidecar-stub\src\main.rs

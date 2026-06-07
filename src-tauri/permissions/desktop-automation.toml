@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "desktop-automation"
+description = "Windscribe CLI, fermeture Chrome et flush DNS pour la creation Outlook"
+commands.allow = ["run_cli_program", "close_chrome_processes", "flush_dns_windows"]

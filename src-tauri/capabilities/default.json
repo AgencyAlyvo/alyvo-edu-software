@@ -48,6 +48,48 @@
     "os:allow-platform",
     "os:allow-hostname",
     "opener:allow-default-urls",
-    "opener:allow-open-url"
+    "opener:allow-open-url",
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "binaries/outlook-creator",
+          "sidecar": true,
+          "args": true
+        },
+        {
+          "name": "binaries/broward-enrollment",
+          "sidecar": true,
+          "args": true
+        },
+        {
+          "name": "binaries/broward-student-id",
+          "sidecar": true,
+          "args": true
+        }
+      ]
+    },
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "binaries/outlook-creator",
+          "sidecar": true,
+          "args": true
+        },
+        {
+          "name": "binaries/broward-enrollment",
+          "sidecar": true,
+          "args": true
+        },
+        {
+          "name": "binaries/broward-student-id",
+          "sidecar": true,
+          "args": true
+        }
+      ]
+    },
+    "shell:allow-kill",
+    "desktop-automation"
   ]
 }

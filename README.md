@@ -65,20 +65,40 @@ git commit --allow-empty -m "chore: release 1.1.0-rc.0" -m "Release-As: 1.1.0-rc
 nvm install lts && nvm use lts
 ```
 
-7. Install dependencies for Nuxt.js/Tauri
+7. Install Python 3.14.5 (sidecar Outlook — build PyInstaller lors de `npm install`) :
+
+- Télécharger l'installateur Windows **3.14.5** : https://www.python.org/downloads/release/python-3145/
+- Cocher **« Add python.exe to PATH »** pendant l'installation
+- Ou via winget (vérifier ensuite la version exacte) :
+
+```bash
+winget install Python.Python.3.14
+python --version
+# doit afficher Python 3.14.5
+```
+
+Vérifier :
+
+```bash
+python --version
+# ou
+py --version
+```
+
+8. Install dependencies for Nuxt.js/Tauri (lance aussi `sidecar:build` via le script `prepare`) :
 
 ```bash
  # npm
  npm install
 ```
 
-8. Install targets rust for build/compile Tauri :
+9. Install targets rust for build/compile Tauri :
 
 ```bash
 npm run desktop:install:target:windows
 ```
 
-9. Il y a toujours une chaine d'outils qui est utilisé par défault, c'est celui qui est choisi lors de la compilation
+10. Il y a toujours une chaine d'outils qui est utilisé par défault, c'est celui qui est choisi lors de la compilation
 
 ```bash
 # Pour connaitre la chaine d'outils actuellement utilisé :
@@ -88,6 +108,11 @@ rustup default
 rustup default stable-x86_64-pc-windows-msvc # Windows x64
 rustup default stable-aarch64-pc-windows-msvc # Windows arm64
 ```
+
+11. Install Google Chrome ou Chromium (requis au **runtime** pour la création de comptes Outlook via nodriver) :
+
+- **Google Chrome** : https://www.google.com/chrome/
+- **Microsoft Edge** (Chromium) convient aussi s'il est à jour : https://www.microsoft.com/edge
 
 <br />
 
@@ -135,21 +160,43 @@ export NVM_DIR="$HOME/.nvm"
 nvm install lts && nvm use lts
 ```
 
-6. Install dependencies for Nuxt.js/Tauri
+6. Install Python 3.14.5 (sidecar Outlook — build PyInstaller lors de `npm install`) :
+
+```bash
+# brew (recommandé — installer la 3.14.x puis vérifier le patch)
+brew install python@3.14
+
+# Ajouter au PATH si besoin (Apple Silicon, exemple) :
+echo 'export PATH="/opt/homebrew/opt/python@3.14/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+python3 --version
+# doit afficher Python 3.14.5
+```
+
+Vérifier :
+
+```bash
+python3 --version
+```
+
+Alternative : installateur officiel https://www.python.org/downloads/macos/
+
+7. Install dependencies for Nuxt.js/Tauri (lance aussi `sidecar:build` via le script `prepare`) :
 
 ```bash
  # npm
  npm install
 ```
 
-7. Install targets rust for build/compile Tauri :
+8. Install targets rust for build/compile Tauri :
 
 ```bash
 # npm
 npm run desktop:install:target:macos
 ```
 
-8. Il y a toujours une chaine d'outils qui est utilisé par défault, c'est celui qui est choisi lors de la compilation
+9. Il y a toujours une chaine d'outils qui est utilisé par défault, c'est celui qui est choisi lors de la compilation
 
 ```bash
 # Pour connaitre la chaine d'outils actuellement utilisé :
@@ -157,6 +204,16 @@ rustup default
 
 # Pour changer la chaine d'outils par défault utilisé, exemples :
 rustup default stable-aarch64-apple-darwin # macOS Apple Silicon arm64
+```
+
+10. Install Google Chrome ou Chromium (requis au **runtime** pour la création de comptes Outlook via nodriver) :
+
+```bash
+# Google Chrome
+brew install --cask google-chrome
+
+# Ou Chromium open source
+brew install --cask chromium
 ```
 
 <br />
@@ -216,21 +273,39 @@ export NVM_DIR="$HOME/.nvm"
 nvm install lts && nvm use lts
 ```
 
-6. Install dependencies for Nuxt.js/Tauri
+6. Install Python 3.15 (sidecar Outlook — build PyInstaller lors de `npm install`) :
+
+```bash
+# Debian / Ubuntu — si la 3.15 n'est pas dans les dépôts, utiliser pyenv ou l'installateur officiel
+# https://www.python.org/downloads/
+
+# Exemple avec pyenv (recommandé pour cibler exactement 3.15) :
+curl https://pyenv.run | bash
+# puis suivre les instructions shell affichées, puis :
+pyenv install 3.15.0
+pyenv global 3.15.0
+
+# Vérifier
+python3 --version
+```
+
+Sur d'autres distributions, utiliser le gestionnaire de paquets équivalent (`dnf`, `pacman`, etc.) ou https://www.python.org/downloads/
+
+7. Install dependencies for Nuxt.js/Tauri (lance aussi `sidecar:build` via le script `prepare`) :
 
 ```bash
 # npm
 npm install
 ```
 
-7. Install targets rust for build/compile Tauri :
+8. Install targets rust for build/compile Tauri :
 
 ```bash
 # npm
 npm run desktop:install:target:linux
 ```
 
-8. Il y a toujours une chaine d'outils qui est utilisé par défault, c'est celui qui est choisi lors de la compilation
+9. Il y a toujours une chaine d'outils qui est utilisé par défault, c'est celui qui est choisi lors de la compilation
 
 ```bash
 # Pour connaitre la chaine d'outils actuellement utilisé :
@@ -239,6 +314,19 @@ rustup default
 # Pour changer la chaine d'outils par défault utilisé, exemples :
 rustup default stable-x86_64-unknown-linux-gnu # Linux x64
 rustup default stable-aarch64-unknown-linux-gnu # Linux arm64
+```
+
+10. Install Google Chrome ou Chromium (requis au **runtime** pour la création de comptes Outlook via nodriver) :
+
+```bash
+# Google Chrome (Debian / Ubuntu — paquet .deb officiel)
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo apt install -y ./google-chrome-stable_current_amd64.deb
+
+# Ou Chromium depuis les dépôts
+sudo apt install -y chromium-browser
+# ou sur certaines distros :
+sudo apt install -y chromium
 ```
 
 <br /><br /><br /><br />

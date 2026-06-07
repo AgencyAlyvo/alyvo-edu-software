@@ -222,7 +222,7 @@ const signUp: () => Promise<void> = async (): Promise<void> => {
     // Redimensionne la fenêtre Tauri pour la vue principale avant la navigation.
     windowTransitionStore.setLoading(true)
     await TauriWindowService.configureMainWindow()
-    await navigateTo('/home')
+    await navigateTo('/home/accounts')
   } catch (error: unknown) {
     console.error('SignUp error:', error)
 

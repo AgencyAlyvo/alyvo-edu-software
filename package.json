@@ -13,6 +13,10 @@
     "web:analyze": "nuxi analyze src-nuxt --loglevel verbose",
     "web:cleanup": "nuxi cleanup src-nuxt",
     "web:prepare": "nuxi prepare src-nuxt",
+    "sidecar:build:outlook": "tsx scripts/build-outlook-sidecar.ts",
+    "sidecar:build:broward": "tsx scripts/build-broward-sidecar.ts",
+    "sidecar:build:student-id": "tsx scripts/build-broward-student-id-sidecar.ts",
+    "sidecar:build": "npm run sidecar:build:outlook && npm run sidecar:build:broward && npm run sidecar:build:student-id",
     "desktop:run:dev": "cross-env RUST_BACKTRACE=full tauri dev",
     "desktop:check:compile": "cd src-tauri && cargo check",
     "desktop:build:windows:x64": "tauri build --target x86_64-pc-windows-msvc",
@@ -33,7 +37,7 @@
     "lint:ts": "nuxi typecheck src-nuxt --dotenv .env.development",
     "lint:eslint": "eslint .",
     "lint:fix": "prettier --write . && eslint . --fix",
-    "prepare": "husky && nuxi prepare src-nuxt --dotenv .env.development"
+    "prepare": "husky && nuxi prepare src-nuxt --dotenv .env.development && npm run sidecar:build"
   },
   "dependencies": {
     "@nuxt/ui": "^4.8.1",
@@ -45,6 +49,7 @@
     "@tauri-apps/plugin-opener": "^2.5.4",
     "@tauri-apps/plugin-os": "^2.3.2",
     "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-shell": "^2.3.5",
     "@tauri-apps/plugin-updater": "^2.10.1",
     "luxon": "^3.7.2",
     "pinia": "^3.0.4",
