@@ -7,5 +7,15 @@ export type SidecarBrowardStudentIdJsonLine = {
   schoolEmail?: string
   studentId?: string
   schoolEmailPassword?: string | null
+  mybcScreenshots?: {
+    studentHome: string
+    prospectMenu: string
+    registrationStatus: string
+  }
+  mybcScreenshotPaths?: {
+    studentHome: string
+    prospectMenu: string
+    registrationStatus: string
+  }
   error?: string
 }

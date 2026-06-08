@@ -42,3 +42,10 @@ export type UpdateManagedAccountPayload = {
   cursorAccountActivatedAt?: string | null
   cursorSheeridRequestSentAt?: string | null
 }
+
+/** Upload des captures myBC (PNG base64). */
+export type UploadMybcScreenshotsPayload = {
+  studentHomeBase64: string
+  prospectMenuBase64: string
+  registrationStatusBase64: string
+}

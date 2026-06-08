@@ -11,6 +11,7 @@ import io
 import json
 import os
 import sys
+from pathlib import Path
 from collections.abc import Callable
 from typing import Any
 
@@ -139,13 +140,34 @@ async def activate_student_id(account: StudentIdAccountInput) -> dict[str, Any]:
             timeout=FLOW_TIMEOUT_SECONDS,
         )
 
-        return {
+        payload: dict[str, Any] = {
             "ok": True,
             "accountId": result.account_id,
             "schoolEmail": result.school_email,
             "studentId": result.student_id,
             "schoolEmailPassword": result.school_email_password or None,
         }
+
+        if result.mybc_screenshots is not None:
+            student_home_path: str = result.mybc_screenshots.student_home
+            prospect_menu_path: str = result.mybc_screenshots.prospect_menu
+            registration_status_path: str = result.mybc_screenshots.registration_status
+            paths_ok: bool = (
+                Path(student_home_path).is_file()
+                and Path(prospect_menu_path).is_file()
+                and Path(registration_status_path).is_file()
+            )
+            if paths_ok:
+                payload["mybcScreenshotPaths"] = {
+                    "studentHome": student_home_path,
+                    "prospectMenu": prospect_menu_path,
+                    "registrationStatus": registration_status_path,
+                }
+                log(f"Captures myBC pretes pour upload : {student_home_path}")
+            else:
+                log("Attention : fichiers capture myBC introuvables sur disque.")
+
+        return payload
     except StudentIdMailNotFoundError as error:
         log(str(error))
         return {

@@ -7,7 +7,7 @@
     </div>
 
     <div v-else class="max-h-[70vh] overflow-auto">
-      <table class="w-full min-w-[2650px] border-collapse text-sm text-[#dfe6ff]">
+      <table class="w-full min-w-[2850px] border-collapse text-sm text-[#dfe6ff]">
         <thead class="sticky top-0 z-[1] bg-[#0f1a38]">
           <tr class="border-b border-[#2f3d67] text-left text-xs font-medium tracking-wide text-[#9ba3bd] uppercase">
             <th class="px-3 py-3 whitespace-nowrap">#</th>
@@ -30,6 +30,7 @@
             <th class="px-3 py-3 whitespace-nowrap">Envoyée le (SheerID)</th>
             <th class="px-3 py-3 whitespace-nowrap">Créé le</th>
             <th class="px-3 py-3 whitespace-nowrap">Modifié le</th>
+            <th class="px-3 py-3 whitespace-nowrap">Captures myBC</th>
             <th class="px-3 py-3 text-right whitespace-nowrap"></th>
           </tr>
         </thead>
@@ -173,6 +174,76 @@
               {{ formatIsoDateTime(account.updatedAt) }}
             </td>
 
+            <td class="min-w-[220px] px-3 py-3 whitespace-nowrap">
+              <div
+                v-if="
+                  account.mybcScreenshotHomeKey
+                    || account.mybcScreenshotProspectKey
+                    || account.mybcScreenshotRegistrationKey
+                "
+                class="flex flex-col gap-1"
+              >
+                <div v-if="account.mybcScreenshotHomeKey" class="flex items-center gap-1">
+                  <UButton
+                    size="xs"
+                    variant="soft"
+                    label="Student Home"
+                    icon="i-heroicons-arrow-down-tray"
+                    :loading="downloadingKey === `${account.id}-student-home`"
+                    @click="downloadMybcScreenshot(account.id, 'student-home')"
+                  />
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    icon="i-heroicons-trash"
+                    :class="iconGhostButtonClass"
+                    :loading="deletingScreenshotKey === `${account.id}-student-home`"
+                    aria-label="Supprimer capture Student Home"
+                    @click="deleteMybcScreenshot(account.id, 'student-home')"
+                  />
+                </div>
+                <div v-if="account.mybcScreenshotProspectKey" class="flex items-center gap-1">
+                  <UButton
+                    size="xs"
+                    variant="soft"
+                    label="Prospect"
+                    icon="i-heroicons-arrow-down-tray"
+                    :loading="downloadingKey === `${account.id}-prospect-menu`"
+                    @click="downloadMybcScreenshot(account.id, 'prospect-menu')"
+                  />
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    icon="i-heroicons-trash"
+                    :class="iconGhostButtonClass"
+                    :loading="deletingScreenshotKey === `${account.id}-prospect-menu`"
+                    aria-label="Supprimer capture Prospect"
+                    @click="deleteMybcScreenshot(account.id, 'prospect-menu')"
+                  />
+                </div>
+                <div v-if="account.mybcScreenshotRegistrationKey" class="flex items-center gap-1">
+                  <UButton
+                    size="xs"
+                    variant="soft"
+                    label="Registration"
+                    icon="i-heroicons-arrow-down-tray"
+                    :loading="downloadingKey === `${account.id}-registration-status`"
+                    @click="downloadMybcScreenshot(account.id, 'registration-status')"
+                  />
+                  <UButton
+                    size="xs"
+                    variant="ghost"
+                    icon="i-heroicons-trash"
+                    :class="iconGhostButtonClass"
+                    :loading="deletingScreenshotKey === `${account.id}-registration-status`"
+                    aria-label="Supprimer capture Registration"
+                    @click="deleteMybcScreenshot(account.id, 'registration-status')"
+                  />
+                </div>
+              </div>
+              <span v-else class="text-xs text-[#9ba3bd]">—</span>
+            </td>
+
             <td class="px-3 py-3 text-right whitespace-nowrap">
               <UButton
                 icon="i-heroicons-trash"
@@ -191,10 +262,13 @@
 </template>
 
 <script lang="ts" setup>
+import { ManagedAccountsApiService } from '#src-core/services/ManagedAccountsApiService'
 import type { ManagedAccount } from '#src-core/types/response/managed-accounts.types'
 import { formatIsoDateTime } from '#src-core/utils/date-format'
 
 import { useAlyvoDarkUi } from '#src-nuxt/app/composables/useAlyvoDarkUi'
+import { useAuthStore } from '#src-nuxt/app/stores/auth.store'
+import { useManagedAccountsStore } from '#src-nuxt/app/stores/managedAccounts.store'
 
 /**
  *
@@ -246,6 +320,68 @@ defineProps<ManagedAccountsListProps>()
 const emit: ManagedAccountsListEmit = defineEmits<ManagedAccountsListEmits>()
 
 const { inputUi, checkboxClass, iconGhostButtonClass } = useAlyvoDarkUi()
+const authStore: ReturnType<typeof useAuthStore> = useAuthStore()
+const accountsStore: ReturnType<typeof useManagedAccountsStore> = useManagedAccountsStore()
+const downloadingKey: Ref<string | null> = ref(null)
+const deletingScreenshotKey: Ref<string | null> = ref(null)
+
+/**
+ * Telecharge une capture myBC depuis l'API.
+ */
+type MybcScreenshotKind = 'student-home' | 'prospect-menu' | 'registration-status'
+
+const downloadMybcScreenshot: (accountId: number, kind: MybcScreenshotKind) => Promise<void> = async (
+  accountId: number,
+  kind: MybcScreenshotKind,
+): Promise<void> => {
+  const token: string | undefined = authStore.authToken
+
+  if (!token) {
+    return
+  }
+
+  const downloadKey: string = `${accountId}-${kind}`
+  downloadingKey.value = downloadKey
+
+  try {
+    const blob: Blob = await ManagedAccountsApiService.downloadMybcScreenshot(token, accountId, kind)
+    const filenameByKind: Record<MybcScreenshotKind, string> = {
+      'student-home': `mybc-student-home-${accountId}.png`,
+      'prospect-menu': `mybc-prospect-menu-${accountId}.png`,
+      'registration-status': `mybc-registration-status-${accountId}.png`,
+    }
+    const filename: string = filenameByKind[kind]
+    const objectUrl: string = URL.createObjectURL(blob)
+    const anchor: HTMLAnchorElement = document.createElement('a')
+    anchor.href = objectUrl
+    anchor.download = filename
+    anchor.click()
+    URL.revokeObjectURL(objectUrl)
+  } finally {
+    if (downloadingKey.value === downloadKey) {
+      downloadingKey.value = null
+    }
+  }
+}
+
+/**
+ * Supprime une capture myBC (S3 + base).
+ */
+const deleteMybcScreenshot: (accountId: number, kind: MybcScreenshotKind) => Promise<void> = async (
+  accountId: number,
+  kind: MybcScreenshotKind,
+): Promise<void> => {
+  const deleteKey: string = `${accountId}-${kind}`
+  deletingScreenshotKey.value = deleteKey
+
+  try {
+    await accountsStore.deleteMybcScreenshot(accountId, kind)
+  } finally {
+    if (deletingScreenshotKey.value === deleteKey) {
+      deletingScreenshotKey.value = null
+    }
+  }
+}
 
 /**
  * Propage la mise a jour du brouillon mot de passe Outlook.

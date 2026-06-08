@@ -107,14 +107,31 @@ export class HttpClientService {
    * @param {string} token - Jeton Bearer.
    * @returns {Promise<void>}
    */
-  public static delete(path: string, token: string): Promise<void> {
+  /**
+   * GET authentifie — reponse binaire (blob).
+   */
+  public static getBlob(path: string, token: string): Promise<Blob> {
     const baseURL: string = this.resolveBaseUrl()
 
     if (!baseURL) {
       throw new Error('API base URL is not configured')
     }
 
-    return $fetch<void>(`${baseURL}${path}`, {
+    return $fetch<Blob>(`${baseURL}${path}`, {
+      method: 'GET',
+      headers: this.authHeaders(token),
+      responseType: 'blob',
+    })
+  }
+
+  public static delete<T = void>(path: string, token: string): Promise<T> {
+    const baseURL: string = this.resolveBaseUrl()
+
+    if (!baseURL) {
+      throw new Error('API base URL is not configured')
+    }
+
+    return $fetch<T>(`${baseURL}${path}`, {
       method: 'DELETE',
       headers: this.authHeaders(token),
     })

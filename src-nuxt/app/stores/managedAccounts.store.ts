@@ -6,6 +6,7 @@ import type {
   CreateManagedAccountPayload,
   ManagedAccountFilter,
   UpdateManagedAccountPayload,
+  UploadMybcScreenshotsPayload,
 } from '#src-core/types/payload/managed-accounts.types'
 import type { ManagedAccount } from '#src-core/types/response/managed-accounts.types'
 
@@ -24,6 +25,11 @@ type ManagedAccountsStore = {
   setFilter: (nextFilter: ManagedAccountFilter) => Promise<void>
   createAccount: (payload: CreateManagedAccountPayload) => Promise<ManagedAccount>
   updateAccount: (id: number, payload: UpdateManagedAccountPayload) => Promise<ManagedAccount>
+  uploadMybcScreenshots: (id: number, payload: UploadMybcScreenshotsPayload) => Promise<ManagedAccount>
+  deleteMybcScreenshot: (
+    id: number,
+    kind: 'student-home' | 'prospect-menu' | 'registration-status',
+  ) => Promise<ManagedAccount>
   deleteAccount: (id: number) => Promise<void>
 }
 
@@ -40,6 +46,11 @@ type ManagedAccountsStoreSetup = {
   setFilter: (nextFilter: ManagedAccountFilter) => Promise<void>
   createAccount: (payload: CreateManagedAccountPayload) => Promise<ManagedAccount>
   updateAccount: (id: number, payload: UpdateManagedAccountPayload) => Promise<ManagedAccount>
+  uploadMybcScreenshots: (id: number, payload: UploadMybcScreenshotsPayload) => Promise<ManagedAccount>
+  deleteMybcScreenshot: (
+    id: number,
+    kind: 'student-home' | 'prospect-menu' | 'registration-status',
+  ) => Promise<ManagedAccount>
   deleteAccount: (id: number) => Promise<void>
 }
 
@@ -159,6 +170,48 @@ export const useManagedAccountsStore: UseManagedAccountsStore = defineStore(
     }
 
     /**
+     * Envoie les captures myBC vers S3 puis rafraichit la liste.
+     */
+    const uploadMybcScreenshots: (
+      id: number,
+      payload: UploadMybcScreenshotsPayload,
+    ) => Promise<ManagedAccount> = async (
+      id: number,
+      payload: UploadMybcScreenshotsPayload,
+    ): Promise<ManagedAccount> => {
+      const token: string | undefined = authStore.authToken
+
+      if (!token) {
+        throw new Error('Not authenticated')
+      }
+
+      const account: ManagedAccount = await ManagedAccountsApiService.uploadMybcScreenshots(token, id, payload)
+      await fetchAccounts()
+      return account
+    }
+
+    /**
+     * Supprime une capture myBC (S3 + base) puis rafraichit la liste.
+     */
+    const deleteMybcScreenshot: (
+      id: number,
+      kind: 'student-home' | 'prospect-menu' | 'registration-status',
+    ) => Promise<ManagedAccount> = async (
+      id: number,
+      kind: 'student-home' | 'prospect-menu' | 'registration-status',
+    ): Promise<ManagedAccount> => {
+      const token: string | undefined = authStore.authToken
+
+      if (!token) {
+        throw new Error('Not authenticated')
+      }
+
+      const account: ManagedAccount = await ManagedAccountsApiService.deleteMybcScreenshot(token, id, kind)
+      await fetchAccounts()
+      return account
+    }
+
+    /**
      * Supprime un compte via l'API puis rafraichit la liste.
      * @param {number} id - Identifiant du compte.
      * @returns {Promise<void>}
@@ -184,6 +237,8 @@ export const useManagedAccountsStore: UseManagedAccountsStore = defineStore(
       setFilter,
       createAccount,
       updateAccount,
+      uploadMybcScreenshots,
+      deleteMybcScreenshot,
       deleteAccount,
     }
   },
