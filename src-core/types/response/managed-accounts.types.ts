@@ -11,6 +11,10 @@ export type ManagedAccount = {
   cursorPassword: string | null
   schoolEmail: string | null
   studentId: string | null
+  mybcScreenshotHomeKey: string | null
+  mybcScreenshotProspectKey: string | null
+  mybcScreenshotRegistrationKey: string | null
+  hasMybcScreenshots: boolean
   schoolEmailPassword: string | null
   schoolEmailActivated: boolean
   schoolRequestSent: boolean

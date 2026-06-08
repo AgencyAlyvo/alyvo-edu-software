@@ -9,6 +9,8 @@ import type {
 } from '#src-core/types/response/broward-student-id-sidecar.types'
 import type { SidecarBrowardStudentIdJsonLine } from '#src-core/types/response/sidecar-broward-student-id-json.types'
 import { normalizeProcessStreamLine } from '#src-core/utils/decode-process-output'
+import { readMybcScreenshotsFromPaths } from '#src-core/utils/mybc-screenshot-files'
+import type { BrowardStudentIdMybcScreenshots } from '#src-core/types/response/broward-student-id-sidecar.types'
 import { Command, type Child, type TerminatedPayload } from '@tauri-apps/plugin-shell'
 
 export type {
@@ -323,6 +325,25 @@ export class BrowardStudentIdSidecarService {
       throwSidecarFailure(result.code, stdout, stderr, outputLines, stderrLines)
     }
 
+    let mybcScreenshots: BrowardStudentIdMybcScreenshots | null = null
+
+    if (parsed.mybcScreenshotPaths) {
+      try {
+        mybcScreenshots = await readMybcScreenshotsFromPaths(parsed.mybcScreenshotPaths)
+        onLog?.('Captures myBC lues depuis le disque — envoi API a suivre.')
+      } catch (readError: unknown) {
+        const readMessage: string =
+          readError instanceof Error ? readError.message : 'Lecture captures myBC impossible'
+        onLog?.(`Attention : ${readMessage}`)
+      }
+    } else if (parsed.mybcScreenshots) {
+      mybcScreenshots = {
+        studentHomeBase64: parsed.mybcScreenshots.studentHome,
+        prospectMenuBase64: parsed.mybcScreenshots.prospectMenu,
+        registrationStatusBase64: parsed.mybcScreenshots.registrationStatus,
+      }
+    }
+
     return {
       type: 'success',
       result: {
@@ -330,6 +351,7 @@ export class BrowardStudentIdSidecarService {
         schoolEmail: parsed.schoolEmail,
         studentId: parsed.studentId,
         schoolEmailPassword: parsed.schoolEmailPassword ?? null,
+        mybcScreenshots,
       },
     }
   }

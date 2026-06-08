@@ -521,6 +521,20 @@ const runActivation: () => Promise<void> = async (): Promise<void> => {
 
         await store.updateAccount(account.id, updatePayload)
 
+        if (outcome.result.mybcScreenshots) {
+          appendStepLog('Enregistrement des captures myBC sur S3 (edu/dev|staging|prod)...')
+          try {
+            await store.uploadMybcScreenshots(account.id, outcome.result.mybcScreenshots)
+            appendSubLog('Captures myBC (Student Home + Prospect menu) enregistrees sur S3.')
+          } catch (uploadError: unknown) {
+            const uploadMessage: string =
+              uploadError instanceof Error ? uploadError.message : 'Echec upload captures myBC'
+            appendSubLog(`Echec upload S3 : ${uploadMessage}`)
+          }
+        } else {
+          appendSubLog('Aucune capture myBC a envoyer (fichiers sidecar non transmis).')
+        }
+
         activatedAccounts.value.push({
           accountId: outcome.result.accountId,
           schoolEmail: outcome.result.schoolEmail,

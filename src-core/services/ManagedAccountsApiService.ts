@@ -3,6 +3,7 @@ import type {
   CreateManagedAccountPayload,
   ManagedAccountFilter,
   UpdateManagedAccountPayload,
+  UploadMybcScreenshotsPayload,
 } from '#src-core/types/payload/managed-accounts.types'
 import type {
   ManagedAccount,
@@ -73,5 +74,42 @@ export class ManagedAccountsApiService {
    */
   public static delete(token: string, id: number): Promise<void> {
     return HttpClientService.delete(`/accounts/${id}`, token)
+  }
+
+  /**
+   * Envoie les captures myBC (PNG base64) vers S3.
+   */
+  public static uploadMybcScreenshots(
+    token: string,
+    id: number,
+    payload: UploadMybcScreenshotsPayload,
+  ): Promise<ManagedAccount> {
+    return HttpClientService.post<ManagedAccountResponse>(`/accounts/${id}/mybc-screenshots`, token, payload).then(
+      (response: ManagedAccountResponse) => response.data,
+    )
+  }
+
+  /**
+   * Telecharge une capture myBC depuis l'API.
+   */
+  public static downloadMybcScreenshot(
+    token: string,
+    id: number,
+    kind: 'student-home' | 'prospect-menu' | 'registration-status',
+  ): Promise<Blob> {
+    return HttpClientService.getBlob(`/accounts/${id}/mybc-screenshots/${kind}`, token)
+  }
+
+  /**
+   * Supprime une capture myBC (S3 + base).
+   */
+  public static deleteMybcScreenshot(
+    token: string,
+    id: number,
+    kind: 'student-home' | 'prospect-menu' | 'registration-status',
+  ): Promise<ManagedAccount> {
+    return HttpClientService.delete<ManagedAccountResponse>(`/accounts/${id}/mybc-screenshots/${kind}`, token).then(
+      (response: ManagedAccountResponse) => response.data,
+    )
   }
 }

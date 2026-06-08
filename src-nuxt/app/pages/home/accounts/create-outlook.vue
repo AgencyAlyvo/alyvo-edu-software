@@ -1,5 +1,5 @@
 <template>
-  <main class="grid max-w-2xl gap-6">
+  <main class="grid max-w-4xl gap-6">
     <header>
       <h1 class="text-2xl font-semibold text-white">Créer des comptes Outlook</h1>
       <div class="mt-1 space-y-2 text-sm text-[#9ba3bd]">
@@ -42,6 +42,12 @@
             <RouterLink to="/home/settings" class="text-[#9a65d5] underline">Paramètres</RouterLink>
             (chemin vers windscribe-cli.exe et pays de connexion).
           </li>
+          <li>
+            <span class="text-[#c5cce0]">Inscription manuelle</span> — bouton
+            <span class="text-[#c5cce0]">Générer profil manuellement</span> dans le formulaire : prénom, nom, email
+            et mot de passe suggérés (mêmes règles que nodriver). Inscrivez-vous vous-même sur Outlook, puis cochez et
+            enregistrez en base.
+          </li>
         </ul>
       </div>
     </header>
@@ -79,7 +85,24 @@
         />
       </AlyvoListFilterField>
 
-      <div class="grid gap-2 sm:grid-cols-[1fr_auto]">
+      <div class="border-t border-[#2f3d67] pt-4">
+        <AlyvoListFilterField
+          label="Inscription manuelle"
+          hint="Génère 10 profils (prénom, nom, email, mot de passe) à utiliser sur signup.live.com sans nodriver."
+        >
+          <UButton
+            type="button"
+            icon="i-heroicons-user-plus"
+            label="Générer profil manuellement"
+            variant="soft"
+            :disabled="running || savingDrafts || !birthday.trim()"
+            class="h-11 max-w-sm justify-center"
+            @click="generateManualDrafts"
+          />
+        </AlyvoListFilterField>
+      </div>
+
+      <div class="grid gap-2 border-t border-[#2f3d67] pt-4 sm:grid-cols-[1fr_auto]">
         <UButton
           type="submit"
           icon="i-heroicons-sparkles"
@@ -125,6 +148,84 @@
       </div>
     </section>
 
+    <section
+      v-if="draftProfiles.length > 0"
+      class="overflow-hidden rounded-lg border border-[#2f3d67] bg-[#0b1433]/70"
+    >
+      <div class="border-b border-[#2f3d67] px-4 py-3">
+        <p class="text-sm font-medium text-white">Profils pour inscription manuelle ({{ draftProfiles.length }})</p>
+        <p class="mt-1 text-xs text-[#9ba3bd]">
+          Inscrivez-vous sur signup.live.com, ajustez l'email ou le mot de passe si besoin, puis cochez et enregistrez
+          en base les comptes créés.
+        </p>
+      </div>
+      <div class="max-h-[28rem] overflow-y-auto">
+        <div
+          v-for="draft in draftProfiles"
+          :key="draft.id"
+          class="grid gap-3 border-b border-[#1a2747] px-4 py-3 text-sm last:border-b-0 md:grid-cols-[auto_1fr]"
+        >
+          <label class="flex items-start gap-2 pt-1">
+            <input
+              v-model="draft.selected"
+              type="checkbox"
+              :disabled="draft.saved || savingDrafts"
+              :class="checkboxClass"
+            />
+            <span class="sr-only">Sélectionner {{ draft.firstName }} {{ draft.lastName }}</span>
+          </label>
+          <div class="grid gap-2">
+            <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span class="font-medium text-white">{{ draft.firstName }} {{ draft.lastName }}</span>
+              <span class="text-xs text-[#9ba3bd]">{{ formatBirthdayLabel(draft.birthday) }}</span>
+              <span
+                v-if="draft.saved"
+                class="rounded bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-300"
+              >
+                Enregistré
+              </span>
+            </div>
+            <UInput
+              v-model="draft.email"
+              type="email"
+              variant="none"
+              :ui="inputUi"
+              :disabled="draft.saved || savingDrafts"
+              placeholder="email@outlook.com"
+            />
+            <UInput
+              v-model="draft.password"
+              type="text"
+              variant="none"
+              :ui="inputUi"
+              :disabled="draft.saved || savingDrafts"
+              placeholder="Mot de passe Outlook"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-3 border-t border-[#2f3d67] px-4 py-3">
+        <UButton
+          type="button"
+          icon="i-heroicons-cloud-arrow-up"
+          :label="savingDrafts ? 'Enregistrement…' : 'Enregistrer la sélection'"
+          :loading="savingDrafts"
+          :disabled="savingDrafts || selectedDraftCount === 0"
+          :class="primaryButtonClass"
+          @click="saveSelectedDrafts"
+        />
+        <span class="text-xs text-[#9ba3bd]">{{ selectedDraftCount }} profil(s) sélectionné(s)</span>
+      </div>
+    </section>
+
+    <UAlert
+      v-if="draftMessage"
+      color="success"
+      variant="soft"
+      title="Profils enregistrés"
+      :description="draftMessage"
+    />
+
     <div v-if="createdAccounts.length > 0" class="overflow-hidden rounded-lg border border-[#2f3d67] bg-[#0b1433]/70">
       <div class="border-b border-[#2f3d67] px-4 py-3 text-sm font-medium text-white">
         Comptes créés ({{ createdAccounts.length }})
@@ -163,8 +264,12 @@ import {
   OutlookSidecarError,
   OutlookSidecarStoppedError,
 } from '#src-core/services/OutlookCreatorSidecarService'
+import type { OutlookDraftProfile } from '#src-core/types/outlook-draft-profile.types'
 import type { OutlookSidecarResult } from '#src-core/types/response/outlook-sidecar.types'
 import { JOURNAL_LINE_INDENT, type JournalLine, type JournalLineLevel } from '#src-core/types/journal-line.types'
+import { formatIsoDate } from '#src-core/utils/date-format'
+import { formatErrorMessage } from '#src-core/utils/format-error-message'
+import { generateOutlookDraftProfiles } from '#src-core/utils/generate-outlook-draft-profiles'
 import { generateOutlookPassword } from '#src-core/utils/generate-outlook-password'
 import {
   collectUsedOutlookNamePairs,
@@ -172,7 +277,6 @@ import {
   registerUsedOutlookNamePair,
   type OutlookNamePair,
 } from '#src-core/utils/outlook-account-names'
-import { formatErrorMessage } from '#src-core/utils/format-error-message'
 
 import AlyvoListFilterField from '#src-nuxt/app/components/ui/AlyvoListFilterField.vue'
 import { useAlyvoDarkUi } from '#src-nuxt/app/composables/useAlyvoDarkUi'
@@ -193,10 +297,15 @@ const RECENT_PASSWORD_HISTORY_SIZE: number = 25
 
 const store: ReturnType<typeof useManagedAccountsStore> = useManagedAccountsStore()
 const desktopSettingsStore: ReturnType<typeof useDesktopSettingsStore> = useDesktopSettingsStore()
-const { inputUi, primaryButtonClass } = useAlyvoDarkUi()
+const { inputUi, primaryButtonClass, checkboxClass } = useAlyvoDarkUi()
+
+const MANUAL_DRAFT_COUNT: number = 10
 
 const accountCountInput: Ref<string> = ref('1')
 const birthday: Ref<string> = ref('')
+const draftProfiles: Ref<OutlookDraftProfile[]> = ref([])
+const savingDrafts: Ref<boolean> = ref(false)
+const draftMessage: Ref<string | null> = ref(null)
 const running: Ref<boolean> = ref(false)
 const stopping: Ref<boolean> = ref(false)
 const stopRequested: Ref<boolean> = ref(false)
@@ -340,6 +449,111 @@ const resolvedAccountCount: ComputedRef<number> = computed((): number => {
 const isFormValid: ComputedRef<boolean> = computed((): boolean => {
   return resolvedAccountCount.value >= MIN_ACCOUNT_COUNT && birthday.value.trim().length > 0
 })
+
+const selectedDraftCount: ComputedRef<number> = computed((): number => {
+  return draftProfiles.value.filter((draft: OutlookDraftProfile) => draft.selected && !draft.saved).length
+})
+
+/**
+ * Affiche la date de naissance au format jj/mm/aaaa.
+ */
+const formatBirthdayLabel: (value: string) => string = (value: string): string => formatIsoDate(value)
+
+/**
+ * Génère 10 profils Outlook pour inscription manuelle.
+ */
+const generateManualDrafts: () => Promise<void> = async (): Promise<void> => {
+  const birthDate: string = birthday.value.trim()
+
+  if (!birthDate) {
+    errorMessage.value = 'Indiquez une date de naissance avant de générer les profils.'
+
+    return
+  }
+
+  errorMessage.value = null
+  draftMessage.value = null
+
+  try {
+    await store.fetchAccounts()
+    const usedNamePairs: OutlookNamePair[] = collectUsedOutlookNamePairs(store.accounts)
+    draftProfiles.value = generateOutlookDraftProfiles(MANUAL_DRAFT_COUNT, birthDate, usedNamePairs)
+    appendStepLog(`${MANUAL_DRAFT_COUNT} profil(s) manuel(s) généré(s) pour inscription Outlook.`)
+  } catch (error: unknown) {
+    errorMessage.value = formatErrorMessage(error)
+  }
+}
+
+/**
+ * Enregistre en base les profils manuels cochés.
+ */
+const saveSelectedDrafts: () => Promise<void> = async (): Promise<void> => {
+  const targets: OutlookDraftProfile[] = draftProfiles.value.filter(
+    (draft: OutlookDraftProfile) => draft.selected && !draft.saved,
+  )
+
+  if (targets.length === 0) {
+    return
+  }
+
+  savingDrafts.value = true
+  errorMessage.value = null
+  draftMessage.value = null
+
+  let savedCount: number = 0
+  const failures: string[] = []
+
+  try {
+    await store.fetchAccounts()
+    const existingEmails: Set<string> = new Set(
+      store.accounts
+        .map((account) => account.outlookEmail?.trim().toLowerCase())
+        .filter((email): email is string => !!email),
+    )
+
+    for (const draft of targets) {
+      const email: string = draft.email.trim().toLowerCase()
+      const password: string = draft.password.trim()
+
+      if (!email) {
+        failures.push(`${draft.firstName} ${draft.lastName} : email vide`)
+        continue
+      }
+
+      if (existingEmails.has(email)) {
+        failures.push(`${email} : déjà en base`)
+        continue
+      }
+
+      try {
+        await store.createAccount({
+          outlookEmail: email,
+          outlookFirstName: draft.firstName,
+          outlookLastName: draft.lastName,
+          outlookEmailPassword: password.length > 0 ? password : null,
+          birthday: draft.birthday,
+        })
+        draft.saved = true
+        draft.selected = false
+        existingEmails.add(email)
+        savedCount += 1
+      } catch (error: unknown) {
+        failures.push(`${email} : ${formatErrorMessage(error)}`)
+      }
+    }
+
+    if (savedCount > 0) {
+      draftMessage.value = `${savedCount} compte(s) enregistré(s) en base.`
+      appendStepLog(`Enregistrement manuel : ${savedCount} compte(s) sauvegardé(s).`)
+    }
+
+    if (failures.length > 0) {
+      errorMessage.value = failures.join('\n')
+    }
+  } finally {
+    savingDrafts.value = false
+  }
+}
 
 /**
  * Met a jour le nombre de comptes (UInput type=number renvoie un number, pas une string).
