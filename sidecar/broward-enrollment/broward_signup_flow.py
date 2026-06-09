@@ -102,23 +102,29 @@ def normalize_broward_email(email: str) -> str:
     return email.strip().lower()
 
 
-BROWARD_SSN_BASE: str = "479412330"
+BROWARD_SSN_BASE: str = "579537797"
+BROWARD_SSN_PREFIX: str = "57953"
+BROWARD_SSN_BASE_SERIAL: int = 7797
+BROWARD_SSN_MAX_ACCOUNTS: int = 1000
 
 
 def derive_broward_ssn(account_id: int) -> str:
     """
-    Derive a unique 9-digit SSN from the accepted-profile base by changing one digit.
-    @param account_id - Managed account id (stable per candidate).
+    Derive a unique 9-digit SSN from the base by incrementing the serial (last 4 digits).
+    account_id 1 -> 579537797, account_id 1000 -> 579538796.
+    @param account_id - Managed account id (stable per candidate, 1..1000).
     @returns Nine-digit SSN string.
     """
-    digits: list[str] = list(BROWARD_SSN_BASE)
-    pos: int = account_id % 9
-    bump: int = (account_id % 9) + 1
-    new_digit: int = (int(digits[pos]) + bump) % 10
-    if new_digit == int(digits[pos]):
-        new_digit = (new_digit + 1) % 10
-    digits[pos] = str(new_digit)
-    return "".join(digits)
+    if account_id < 1 or account_id > BROWARD_SSN_MAX_ACCOUNTS:
+        raise ValueError(
+            f"account_id must be between 1 and {BROWARD_SSN_MAX_ACCOUNTS}, got {account_id}"
+        )
+
+    serial: int = BROWARD_SSN_BASE_SERIAL + (account_id - 1)
+    if serial > 9999:
+        raise ValueError(f"SSN serial overflow for account_id {account_id}")
+
+    return f"{BROWARD_SSN_PREFIX}{serial:04d}"
 
 
 @dataclass(frozen=True)
