@@ -85,6 +85,7 @@ MYBC_REGISTRATION_STATUS_SERVLET_PATH: str = "/FCCSC/servlet/registration.IAS016
 MYBC_PRIMARY_OBJECTIVE_DISPLAY: str = "2150 - Applied Artificial Intelligence"
 MYBC_SCREENSHOT_LOAD_TIMEOUT_S: float = 60.0
 MYBC_SCREENSHOT_POST_DOM_WAIT_S: float = 0.6
+MYBC_SCREENSHOT_MAX_WIDTH: int = 1920
 MYBC_SECURITY_QUESTION_CODE: str = "04"  # The Name Of Your Favorite Pet
 MYBC_SECURITY_QUESTION_ANSWER: str = "Buddy"
 ONELOGIN_PORTAL_URL: str = "https://broward.onelogin.com/"
@@ -2392,7 +2393,22 @@ async def _read_chrome_window_bounds(tab: Any) -> dict[str, int]:
     }
 
 
-def _capture_chrome_window_png_sync(left: int, top: int, width: int, height: int, output_path: Path) -> None:
+def _optimize_screenshot_png_sync(output_path: Path) -> int:
+    """Reduit la taille PNG (resize + compression) pour l'upload API."""
+    from PIL import Image
+
+    with Image.open(output_path) as image:
+        width, height = image.size
+        if width > MYBC_SCREENSHOT_MAX_WIDTH:
+            ratio: float = MYBC_SCREENSHOT_MAX_WIDTH / width
+            new_height: int = max(1, int(height * ratio))
+            image = image.resize((MYBC_SCREENSHOT_MAX_WIDTH, new_height), Image.Resampling.LANCZOS)
+        image.save(output_path, format="PNG", optimize=True, compress_level=9)
+
+    return output_path.stat().st_size
+
+
+def _capture_chrome_window_png_sync(left: int, top: int, width: int, height: int, output_path: Path) -> int:
     """Capture la fenetre Chrome via mss (barre d'adresse Chrome incluse)."""
     import mss
     import mss.tools
@@ -2414,6 +2430,8 @@ def _capture_chrome_window_png_sync(left: int, top: int, width: int, height: int
         shot = screenshotter.grab(monitor)
         mss.tools.to_png(shot.rgb, shot.size, output=str(output_path))
 
+    return _optimize_screenshot_png_sync(output_path)
+
 
 async def _take_chrome_window_screenshot(
     tab: Any,
@@ -2427,7 +2445,7 @@ async def _take_chrome_window_screenshot(
     await tab.sleep(MYBC_SCREENSHOT_POST_DOM_WAIT_S)
 
     bounds: dict[str, int] = await _read_chrome_window_bounds(tab)
-    await asyncio.to_thread(
+    file_size_bytes: int = await asyncio.to_thread(
         _capture_chrome_window_png_sync,
         bounds["left"],
         bounds["top"],
@@ -2435,9 +2453,10 @@ async def _take_chrome_window_screenshot(
         bounds["height"],
         output_path,
     )
+    file_size_kb: int = max(1, file_size_bytes // 1024)
     log(
         f"  Capture fenetre Chrome ({page_url}) : {output_path.name}"
-        f" [{bounds['width']}x{bounds['height']}]",
+        f" [{bounds['width']}x{bounds['height']}, {file_size_kb} Ko]",
     )
     return str(output_path)
 
