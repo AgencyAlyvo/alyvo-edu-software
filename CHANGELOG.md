@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.6](https://github.com/AgencyAlyvo/alyvo-edu-software/compare/v1.0.5...v1.0.6) (2026-06-10)
+
+
+### Bug Fixes
+
+* xx ([b806c93](https://github.com/AgencyAlyvo/alyvo-edu-software/commit/b806c934addd2e7fa996372bd590cf21fd0ce434))
+
 ## [1.0.5](https://github.com/AgencyAlyvo/alyvo-edu-software/compare/v1.0.4...v1.0.5) (2026-06-09)
 
 
