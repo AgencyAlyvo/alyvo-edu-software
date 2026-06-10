@@ -7,9 +7,9 @@ broward_dir = os.path.join(spec_dir, '..', 'broward-enrollment')
 
 datas = []
 binaries = []
-hiddenimports = ['student_id_flow', 'broward_signup_flow', 'capsolver_client', 'httpx', 'mss', 'mss.tools', 'PIL', 'PIL.Image']
+hiddenimports = ['student_id_flow', 'broward_signup_flow', 'capsolver_client', 'httpx', 'mss', 'mss.tools']
 
-for package in ('nodriver', 'websockets', 'asyncio', 'httpx', 'mss', 'PIL'):
+for package in ('nodriver', 'websockets', 'asyncio', 'httpx', 'mss'):
     tmp_ret = collect_all(package)
     datas += tmp_ret[0]
     binaries += tmp_ret[1]
