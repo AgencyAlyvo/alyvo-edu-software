@@ -90,6 +90,11 @@ const sections: NavSection[] = [
         icon: 'i-heroicons-identification',
         to: '/home/accounts/activate-broward',
       },
+      {
+        name: 'Support SheerID',
+        icon: 'i-heroicons-clipboard-document-list',
+        to: '/home/sheerid-support',
+      },
     ],
   },
 ]
@@ -118,6 +123,10 @@ const isActive: (to: string) => boolean = (to: string): boolean => {
 
   if (to === '/home/accounts/activate-broward') {
     return path === '/home/accounts/activate-broward'
+  }
+
+  if (to === '/home/sheerid-support') {
+    return path === '/home/sheerid-support'
   }
 
   return path.startsWith(to)
