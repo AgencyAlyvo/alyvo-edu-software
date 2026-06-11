@@ -21,6 +21,7 @@ from broward_signup_flow import (
     run_broward_signup,
 )
 from capsolver_client import CapSolverProxyBannedError
+from nodriver_window_layout import apply_nodriver_window_layout
 
 SIGNUP_TIMEOUT_SECONDS: float = 900
 BROWSER_STOP_POLL_INTERVAL_SECONDS: float = 0.25
@@ -95,6 +96,18 @@ def parse_args() -> argparse.Namespace:
         "--account-json",
         required=True,
         help="JSON compte : accountId, firstName, lastName, birthday, email, password",
+    )
+    parser.add_argument(
+        "--window-slot",
+        type=int,
+        default=None,
+        help="Index fenetre dans la vague parallele (0-based).",
+    )
+    parser.add_argument(
+        "--window-slots",
+        type=int,
+        default=None,
+        help="Nombre d'instances Chrome simultanees pour le placement fenetre.",
     )
     return parser.parse_args()
 
@@ -191,7 +204,12 @@ def parse_account_json(raw: str) -> BrowardAccountInput:
     )
 
 
-async def enroll_broward(account: BrowardAccountInput) -> dict[str, Any]:
+async def enroll_broward(
+    account: BrowardAccountInput,
+    *,
+    window_slot: int | None = None,
+    window_slots: int | None = None,
+) -> dict[str, Any]:
     api_key: str = os.environ.get("CAPSOLVER_API_KEY", "").strip()
     if not api_key:
         return {
@@ -225,6 +243,14 @@ async def enroll_broward(account: BrowardAccountInput) -> dict[str, Any]:
 
             browser = await uc.start(headless=False)
             tab = await browser.get("about:blank")
+
+            if window_slot is not None and window_slots is not None:
+                await apply_nodriver_window_layout(
+                    tab,
+                    slot=window_slot,
+                    slots=window_slots,
+                    log_fn=log,
+                )
 
             await asyncio.wait_for(
                 run_broward_signup(tab, account, api_key, log),
@@ -289,7 +315,11 @@ async def main() -> int:
         emit({"ok": False, "error": str(error)})
         return 1
 
-    result = await enroll_broward(account)
+    result = await enroll_broward(
+        account,
+        window_slot=args.window_slot,
+        window_slots=args.window_slots,
+    )
     emit(result)
     return 0 if result.get("ok") else 1
 

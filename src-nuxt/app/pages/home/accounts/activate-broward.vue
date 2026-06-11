@@ -199,6 +199,11 @@ import {
 import { formatErrorMessage } from '#src-core/utils/format-error-message'
 import type { ConcurrentPoolWorkerResult } from '#src-core/utils/run-concurrent-pool'
 import { runConcurrentPool } from '#src-core/utils/run-concurrent-pool'
+import {
+  acquireSidecarWaveSlot,
+  releaseSidecarWaveSlot,
+  resetSidecarWaveCoordinator,
+} from '#src-core/utils/sidecar-wave-coordinator'
 import { prepareSidecarWaveNetwork } from '#src-core/utils/sidecar-wave-network'
 
 import AlyvoListFilterField from '#src-nuxt/app/components/ui/AlyvoListFilterField.vue'
@@ -436,6 +441,7 @@ const runActivation: () => Promise<void> = async (): Promise<void> => {
 
   try {
     BrowardStudentIdSidecarService.prepareBatch()
+    resetSidecarWaveCoordinator()
     const maxConcurrent: number = desktopSettingsStore.browardActivationMaxConcurrentInstances
     let abortAfterFailure: boolean = false
 
@@ -468,6 +474,9 @@ const runActivation: () => Promise<void> = async (): Promise<void> => {
           return 'abort'
         }
 
+        acquireSidecarWaveSlot(maxConcurrent)
+
+        try {
         const email: string = account.outlookEmail?.trim().toLowerCase() ?? ''
         const password: string = account.outlookEmailPassword?.trim() ?? ''
         const birthday: string = toBrowardBirthdayIso(account.birthday)
@@ -483,6 +492,9 @@ const runActivation: () => Promise<void> = async (): Promise<void> => {
               email,
               password,
               birthday,
+              ...(maxConcurrent > 1
+                ? { windowSlot: index % maxConcurrent, windowSlots: maxConcurrent }
+                : {}),
             },
             (line: string) => appendSidecarLog(`${logPrefix} ${line}`),
           )
@@ -560,6 +572,9 @@ const runActivation: () => Promise<void> = async (): Promise<void> => {
           }
 
           return 'abort'
+        }
+        } finally {
+          releaseSidecarWaveSlot(maxConcurrent)
         }
       },
       (completed: number) => {

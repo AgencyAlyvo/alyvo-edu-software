@@ -159,6 +159,11 @@ import { listBrowardEligibleAccounts, toBrowardBirthdayIso } from '#src-core/uti
 import { formatErrorMessage } from '#src-core/utils/format-error-message'
 import type { ConcurrentPoolWorkerResult } from '#src-core/utils/run-concurrent-pool'
 import { runConcurrentPool } from '#src-core/utils/run-concurrent-pool'
+import {
+  acquireSidecarWaveSlot,
+  releaseSidecarWaveSlot,
+  resetSidecarWaveCoordinator,
+} from '#src-core/utils/sidecar-wave-coordinator'
 import { prepareSidecarWaveNetwork } from '#src-core/utils/sidecar-wave-network'
 
 import AlyvoListFilterField from '#src-nuxt/app/components/ui/AlyvoListFilterField.vue'
@@ -392,6 +397,7 @@ const runEnrollment: () => Promise<void> = async (): Promise<void> => {
 
   try {
     BrowardEnrollmentSidecarService.prepareBatch()
+    resetSidecarWaveCoordinator()
     const maxConcurrent: number = desktopSettingsStore.browardEnrollmentMaxConcurrentInstances
     let abortAfterFailure: boolean = false
 
@@ -424,6 +430,9 @@ const runEnrollment: () => Promise<void> = async (): Promise<void> => {
           return 'abort'
         }
 
+        acquireSidecarWaveSlot(maxConcurrent)
+
+        try {
         const firstName: string = account.outlookFirstName?.trim() ?? ''
         const lastName: string = account.outlookLastName?.trim() ?? ''
         const email: string = account.outlookEmail?.trim().toLowerCase() ?? ''
@@ -444,6 +453,9 @@ const runEnrollment: () => Promise<void> = async (): Promise<void> => {
               birthday,
               email,
               password,
+              ...(maxConcurrent > 1
+                ? { windowSlot: index % maxConcurrent, windowSlots: maxConcurrent }
+                : {}),
             },
             capsolverKey,
             (line: string) => appendSidecarLog(`${logPrefix} ${line}`),
@@ -486,6 +498,9 @@ const runEnrollment: () => Promise<void> = async (): Promise<void> => {
           }
 
           return 'abort'
+        }
+        } finally {
+          releaseSidecarWaveSlot(maxConcurrent)
         }
       },
       (completed: number) => {

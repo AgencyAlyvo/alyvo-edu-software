@@ -32,4 +32,8 @@ export type OutlookCreationOptions = {
   lastName?: string
   /** true si le flush DNS a deja ete fait par l'app avant le sidecar. */
   skipDnsFlush?: boolean
+  /** Slot fenetre Chrome (0-based) dans la vague parallele. */
+  windowSlot?: number
+  /** Nombre d'instances Chrome simultanees pour le placement fenetre. */
+  windowSlots?: number
 }

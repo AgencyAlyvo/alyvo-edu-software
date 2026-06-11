@@ -280,6 +280,11 @@ import {
 } from '#src-core/utils/outlook-account-names'
 import type { ConcurrentPoolWorkerResult } from '#src-core/utils/run-concurrent-pool'
 import { runConcurrentPool } from '#src-core/utils/run-concurrent-pool'
+import {
+  acquireSidecarWaveSlot,
+  releaseSidecarWaveSlot,
+  resetSidecarWaveCoordinator,
+} from '#src-core/utils/sidecar-wave-coordinator'
 import { prepareSidecarWaveNetwork } from '#src-core/utils/sidecar-wave-network'
 import { randomUsFullName } from '#src-core/utils/us-outlook-names'
 
@@ -632,6 +637,7 @@ const runCreation: () => Promise<void> = async (): Promise<void> => {
 
   try {
     OutlookCreatorSidecarService.prepareBatch()
+    resetSidecarWaveCoordinator()
     await store.fetchAccounts()
     const usedNamePairs: OutlookNamePair[] = collectUsedOutlookNamePairs(store.accounts)
     const usedNameKeys: Set<string> = new Set(
@@ -674,7 +680,10 @@ const runCreation: () => Promise<void> = async (): Promise<void> => {
           return 'abort'
         }
 
+        acquireSidecarWaveSlot(maxConcurrent)
+
         try {
+          try {
           appendStepLog(`Compte ${index + 1} — Inscription Outlook (nodriver / Chrome)`)
 
           let password: string = ''
@@ -712,6 +721,9 @@ const runCreation: () => Promise<void> = async (): Promise<void> => {
               firstName,
               lastName,
               skipDnsFlush: desktopSettingsStore.isVpnRotationConfigured,
+              ...(maxConcurrent > 1
+                ? { windowSlot: index % maxConcurrent, windowSlots: maxConcurrent }
+                : {}),
             },
             (line: string) => appendSidecarLog(`[${index + 1}/${total}] ${line}`),
           )
@@ -764,6 +776,9 @@ const runCreation: () => Promise<void> = async (): Promise<void> => {
           }
 
           return 'abort'
+        }
+        } finally {
+          releaseSidecarWaveSlot(maxConcurrent)
         }
       },
       (completed: number, poolTotal: number) => {

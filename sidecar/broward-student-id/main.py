@@ -15,6 +15,7 @@ from pathlib import Path
 from collections.abc import Callable
 from typing import Any
 
+from nodriver_window_layout import apply_nodriver_window_layout
 from student_id_flow import (
     StudentIdAccountInput,
     StudentIdMailNotFoundError,
@@ -93,6 +94,18 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="JSON compte : accountId, email, password, birthday",
     )
+    parser.add_argument(
+        "--window-slot",
+        type=int,
+        default=None,
+        help="Index fenetre dans la vague parallele (0-based).",
+    )
+    parser.add_argument(
+        "--window-slots",
+        type=int,
+        default=None,
+        help="Nombre d'instances Chrome simultanees pour le placement fenetre.",
+    )
     return parser.parse_args()
 
 
@@ -118,7 +131,12 @@ def parse_account_json(raw: str) -> StudentIdAccountInput:
     )
 
 
-async def activate_student_id(account: StudentIdAccountInput) -> dict[str, Any]:
+async def activate_student_id(
+    account: StudentIdAccountInput,
+    *,
+    window_slot: int | None = None,
+    window_slots: int | None = None,
+) -> dict[str, Any]:
     try:
         import nodriver as uc
     except Exception as error:  # noqa: BLE001
@@ -134,6 +152,14 @@ async def activate_student_id(account: StudentIdAccountInput) -> dict[str, Any]:
         log("Demarrage de Chrome/Chromium via nodriver...")
         browser = await uc.start(headless=False)
         tab = await browser.get("about:blank")
+
+        if window_slot is not None and window_slots is not None:
+            await apply_nodriver_window_layout(
+                tab,
+                slot=window_slot,
+                slots=window_slots,
+                log_fn=log,
+            )
 
         result = await asyncio.wait_for(
             run_student_id_flow(tab, account, log),
@@ -198,7 +224,11 @@ async def main() -> int:
         emit({"ok": False, "error": str(error)})
         return 1
 
-    result = await activate_student_id(account)
+    result = await activate_student_id(
+        account,
+        window_slot=args.window_slot,
+        window_slots=args.window_slots,
+    )
     emit(result)
 
     if result.get("skipped"):

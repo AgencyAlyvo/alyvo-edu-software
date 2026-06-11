@@ -13,7 +13,7 @@ import { OUTLOOK_CREATOR_SIDECAR_NAME } from '#src-core/constants/outlook-sideca
 import type { OutlookCreationOptions, OutlookSidecarResult } from '#src-core/types/response/outlook-sidecar.types'
 import type { SidecarOutlookJsonLine } from '#src-core/types/response/sidecar-outlook-json.types'
 import { normalizeProcessStreamLine } from '#src-core/utils/decode-process-output'
-import { formatSidecarCliOption } from '#src-core/utils/sidecar-cli-args'
+import { appendSidecarWindowLayoutCliArgs, formatSidecarCliOption } from '#src-core/utils/sidecar-cli-args'
 import { SidecarActiveChildren } from '#src-core/utils/sidecar-active-children'
 import { Command, type Child, type TerminatedPayload } from '@tauri-apps/plugin-shell'
 
@@ -256,6 +256,13 @@ export class OutlookCreatorSidecarService {
 
     if (options.lastName?.trim()) {
       sidecarArgs.push(formatSidecarCliOption('last-name', options.lastName.trim()))
+    }
+
+    if (options.windowSlots !== undefined && options.windowSlot !== undefined) {
+      appendSidecarWindowLayoutCliArgs(sidecarArgs, {
+        windowSlot: options.windowSlot,
+        windowSlots: options.windowSlots,
+      })
     }
 
     const command: Command<Uint8Array> = Command.sidecar(

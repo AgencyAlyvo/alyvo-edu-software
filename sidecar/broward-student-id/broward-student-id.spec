@@ -4,10 +4,19 @@ from PyInstaller.utils.hooks import collect_all
 
 spec_dir = os.path.dirname(os.path.abspath(SPEC))
 broward_dir = os.path.join(spec_dir, '..', 'broward-enrollment')
+shared_dir = os.path.join(spec_dir, '..', '_shared')
 
 datas = []
 binaries = []
-hiddenimports = ['student_id_flow', 'broward_signup_flow', 'capsolver_client', 'httpx', 'mss', 'mss.tools']
+hiddenimports = [
+    'student_id_flow',
+    'broward_signup_flow',
+    'capsolver_client',
+    'httpx',
+    'mss',
+    'mss.tools',
+    'nodriver_window_layout',
+]
 
 for package in ('nodriver', 'websockets', 'asyncio', 'httpx', 'mss'):
     tmp_ret = collect_all(package)
@@ -17,7 +26,7 @@ for package in ('nodriver', 'websockets', 'asyncio', 'httpx', 'mss'):
 
 a = Analysis(
     ['main.py'],
-    pathex=[broward_dir],
+    pathex=[broward_dir, shared_dir],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,

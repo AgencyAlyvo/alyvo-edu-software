@@ -1,9 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
 from PyInstaller.utils.hooks import collect_all
+
+spec_dir = os.path.dirname(os.path.abspath(SPEC))
+shared_dir = os.path.join(spec_dir, '..', '_shared')
 
 datas = [('data', 'data')]
 binaries = []
-hiddenimports = ['us_names', 'email_builder', 'outlook_signup_flow', 'outlook_password']
+hiddenimports = ['us_names', 'email_builder', 'outlook_signup_flow', 'outlook_password', 'nodriver_window_layout']
 
 for package in ('nodriver', 'websockets', 'asyncio'):
     tmp_ret = collect_all(package)
@@ -13,7 +17,7 @@ for package in ('nodriver', 'websockets', 'asyncio'):
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=[shared_dir],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
