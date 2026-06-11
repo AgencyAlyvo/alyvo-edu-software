@@ -4,8 +4,9 @@
       <h1 class="text-2xl font-semibold text-white">Créer des comptes Outlook</h1>
       <div class="mt-1 space-y-2 text-sm text-[#9ba3bd]">
         <p>
-          Lance l'automatisation nodriver (Google Chrome ou Chromium requis sur ce PC). Les comptes sont traités
-          <span class="text-[#c5cce0]">un par un</span> ; le journal en bas de page affiche chaque étape en direct.
+          Lance l'automatisation nodriver (Google Chrome ou Chromium requis sur ce PC). Parallélisme configurable dans
+          <RouterLink to="/home/settings" class="text-[#9a65d5] underline">Paramètres</RouterLink>
+          ; le journal en bas affiche chaque étape en direct.
         </p>
         <ul class="list-inside list-disc space-y-1 pl-1">
           <li>
@@ -257,7 +258,6 @@
 <script lang="ts" setup>
 import type { ComputedRef, Ref } from 'vue'
 
-import { OUTLOOK_ACCOUNTS_PER_VPN_ROTATION } from '#src-core/constants/desktop-settings.constants'
 import { OutlookBatchVpnService } from '#src-core/services/OutlookBatchVpnService'
 import {
   OutlookCreatorSidecarService,
@@ -270,6 +270,7 @@ import { JOURNAL_LINE_INDENT, type JournalLine, type JournalLineLevel } from '#s
 import { formatIsoDate } from '#src-core/utils/date-format'
 import { formatErrorMessage } from '#src-core/utils/format-error-message'
 import { generateOutlookDraftProfiles } from '#src-core/utils/generate-outlook-draft-profiles'
+import { createAsyncMutex } from '#src-core/utils/async-mutex'
 import { generateOutlookPassword } from '#src-core/utils/generate-outlook-password'
 import {
   collectUsedOutlookNamePairs,
@@ -277,6 +278,10 @@ import {
   registerUsedOutlookNamePair,
   type OutlookNamePair,
 } from '#src-core/utils/outlook-account-names'
+import type { ConcurrentPoolWorkerResult } from '#src-core/utils/run-concurrent-pool'
+import { runConcurrentPool } from '#src-core/utils/run-concurrent-pool'
+import { prepareSidecarWaveNetwork } from '#src-core/utils/sidecar-wave-network'
+import { randomUsFullName } from '#src-core/utils/us-outlook-names'
 
 import AlyvoListFilterField from '#src-nuxt/app/components/ui/AlyvoListFilterField.vue'
 import { useAlyvoDarkUi } from '#src-nuxt/app/composables/useAlyvoDarkUi'
@@ -626,153 +631,148 @@ const runCreation: () => Promise<void> = async (): Promise<void> => {
   const recentPasswords: string[] = []
 
   try {
+    OutlookCreatorSidecarService.prepareBatch()
     await store.fetchAccounts()
     const usedNamePairs: OutlookNamePair[] = collectUsedOutlookNamePairs(store.accounts)
     const usedNameKeys: Set<string> = new Set(
       usedNamePairs.map((pair: OutlookNamePair) => outlookNamePairKey(pair.firstName, pair.lastName)),
     )
 
-    for (let index: number = 0; index < total; index += 1) {
-      if (isStopRequested()) {
-        appendStepLog('Creation arretee avant le compte suivant.')
-        break
-      }
+    const maxConcurrent: number = desktopSettingsStore.outlookMaxConcurrentInstances
+    const useFixedNames: boolean = maxConcurrent > 1
+    const reservationMutex: ReturnType<typeof createAsyncMutex> = createAsyncMutex()
+    const accountIndices: number[] = Array.from({ length: total }, (_unused: undefined, index: number) => index)
 
-      progressCurrent.value = index + 1
-      let stepCounter: number = 0
+    appendStepLog(
+      `Parallelisme : jusqu'a ${maxConcurrent} instance(s) Chrome (Parametres). ${usedNamePairs.length} combinaison(s) prenom/nom deja utilisee(s).`,
+    )
 
-      const isStartOfVpnBatch: boolean = index % OUTLOOK_ACCOUNTS_PER_VPN_ROTATION === 0
-      const batchNumber: number = Math.floor(index / OUTLOOK_ACCOUNTS_PER_VPN_ROTATION) + 1
-      const accountInBatch: number = (index % OUTLOOK_ACCOUNTS_PER_VPN_ROTATION) + 1
+    let abortAfterFailure: boolean = false
 
-      appendAccountLog(`=== Compte ${index + 1} / ${total} ===`)
-
-      if (index === 0) {
-        stepCounter += 1
-        appendStepLog(
-          `Etape ${stepCounter} — Verification API : ${usedNamePairs.length} combinaison(s) prénom/nom deja utilisee(s).`,
-        )
-      }
-
-      if (isStartOfVpnBatch) {
-        stepCounter += 1
-
-        if (desktopSettingsStore.isVpnRotationConfigured) {
-          appendStepLog(
-            `Etape ${stepCounter} — Reseau : connexion Windscribe (${desktopSettingsStore.windscribeLocation}), flush DNS, puis Chrome.`,
-          )
-          await OutlookBatchVpnService.prepareBeforeChrome({
-            windscribeCliPath: desktopSettingsStore.windscribeCliPath,
-            location: desktopSettingsStore.windscribeLocation,
-            closeChromeFirst: index > 0,
-            batchNumber,
-            onLog: appendSubLog,
-          })
-        } else if (index === 0) {
-          appendStepLog(`Etape ${stepCounter} — Reseau : Windscribe non configure (voir Parametres).`)
-        } else {
-          appendStepLog(
-            `Etape ${stepCounter} — Reseau : lot ${batchNumber} sans changement d'IP (configurez windscribe-cli.exe).`,
-          )
-        }
-      } else if (index > 0) {
-        stepCounter += 1
-        appendStepLog(
-          `Etape ${stepCounter} — Meme lot VPN (${accountInBatch}/${OUTLOOK_ACCOUNTS_PER_VPN_ROTATION}) : fermeture de Chrome avant relance.`,
-        )
-        await OutlookBatchVpnService.ensureChromeClosedBeforeSidecar(appendSubLog)
-      }
-
-      if (isStopRequested()) {
-        appendStepLog('Creation arretee avant le lancement du sidecar Outlook.')
-        break
-      }
-
-      try {
-        stepCounter += 1
-        appendStepLog(`Etape ${stepCounter} — Inscription Outlook (nodriver / Chrome)`)
-
-        const password: string = generateOutlookPassword(recentPasswords)
-        recentPasswords.push(password)
-
-        if (recentPasswords.length > RECENT_PASSWORD_HISTORY_SIZE) {
-          recentPasswords.shift()
+    await runConcurrentPool(
+      accountIndices,
+      maxConcurrent,
+      isStopRequested,
+      async (index: number): Promise<ConcurrentPoolWorkerResult> => {
+        if (abortAfterFailure || isStopRequested()) {
+          return 'abort'
         }
 
-        appendSidecarLog(`Date de naissance : ${birthDate}`)
-        appendSidecarLog(`Mot de passe (${password.length} caracteres) : ${password}`)
-        appendSidecarLog('Demarrage du sidecar — suivi des etapes Microsoft ci-dessous :')
+        appendAccountLog(`=== Compte ${index + 1} / ${total} ===`)
 
-        const result: OutlookSidecarResult = await OutlookCreatorSidecarService.createOutlookAccount(
-          {
-            password,
-            birthday: birthDate,
-            usedNamePairs,
-            skipDnsFlush: desktopSettingsStore.isVpnRotationConfigured,
-          },
-          appendSidecarLog,
-        )
-
-        registerUsedOutlookNamePair(usedNamePairs, usedNameKeys, result.firstName, result.lastName)
-
-        createdAccounts.value.push(result)
-        await store.createAccount({
-          outlookEmail: result.email,
-          outlookFirstName: result.firstName,
-          outlookLastName: result.lastName,
-          outlookEmailPassword: result.password,
-          birthday: birthDate,
+        await prepareSidecarWaveNetwork({
+          index,
+          maxConcurrent,
+          isVpnConfigured: desktopSettingsStore.isVpnRotationConfigured,
+          windscribeCliPath: desktopSettingsStore.windscribeCliPath,
+          windscribeLocation: desktopSettingsStore.windscribeLocation,
+          onStepLog: appendStepLog,
+          onSubLog: appendSubLog,
         })
-        appendSidecarLog(`Compte cree — email final : ${result.email}`)
-        appendStepLog(`Compte ${index + 1} enregistre : ${result.email}`)
-      } catch (accountError: unknown) {
-        if (accountError instanceof OutlookSidecarStoppedError || isStopRequested()) {
-          if (accountError instanceof OutlookSidecarStoppedError) {
-            for (const line of accountError.logLines) {
-              const alreadyLogged: boolean = logs.value.some(
-                (entry: JournalLine) =>
-                  entry.text === line.trim() &&
-                  (entry.level === 'sidecar' || entry.level === 'sidecarDetail' || entry.level === 'sidecarDeep'),
-              )
 
-              if (!alreadyLogged) {
-                appendSidecarLog(line)
+        if (isStopRequested()) {
+          return 'abort'
+        }
+
+        try {
+          appendStepLog(`Compte ${index + 1} — Inscription Outlook (nodriver / Chrome)`)
+
+          let password: string = ''
+          let firstName: string | undefined
+          let lastName: string | undefined
+
+          await reservationMutex(async (): Promise<void> => {
+            password = generateOutlookPassword(recentPasswords)
+            recentPasswords.push(password)
+
+            if (recentPasswords.length > RECENT_PASSWORD_HISTORY_SIZE) {
+              recentPasswords.shift()
+            }
+
+            if (useFixedNames) {
+              const picked: { firstName: string; lastName: string } = randomUsFullName(usedNamePairs)
+              firstName = picked.firstName
+              lastName = picked.lastName
+              registerUsedOutlookNamePair(usedNamePairs, usedNameKeys, firstName, lastName)
+            }
+          })
+
+          appendSidecarLog(`[${index + 1}/${total}] Date de naissance : ${birthDate}`)
+          appendSidecarLog(`[${index + 1}/${total}] Mot de passe (${password.length} caracteres) : ${password}`)
+          if (firstName && lastName) {
+            appendSidecarLog(`[${index + 1}/${total}] Prenom / Nom : ${firstName} ${lastName}`)
+          }
+          appendSidecarLog(`[${index + 1}/${total}] Demarrage du sidecar Outlook :`)
+
+          const result: OutlookSidecarResult = await OutlookCreatorSidecarService.createOutlookAccount(
+            {
+              password,
+              birthday: birthDate,
+              usedNamePairs,
+              firstName,
+              lastName,
+              skipDnsFlush: desktopSettingsStore.isVpnRotationConfigured,
+            },
+            (line: string) => appendSidecarLog(`[${index + 1}/${total}] ${line}`),
+          )
+
+          if (!useFixedNames) {
+            registerUsedOutlookNamePair(usedNamePairs, usedNameKeys, result.firstName, result.lastName)
+          }
+
+          createdAccounts.value.push(result)
+          await store.createAccount({
+            outlookEmail: result.email,
+            outlookFirstName: result.firstName,
+            outlookLastName: result.lastName,
+            outlookEmailPassword: result.password,
+            birthday: birthDate,
+          })
+          appendSidecarLog(`[${index + 1}/${total}] Compte cree — ${result.email}`)
+          appendStepLog(`Compte ${index + 1} enregistre : ${result.email}`)
+
+          return 'done'
+        } catch (accountError: unknown) {
+          if (accountError instanceof OutlookSidecarStoppedError || isStopRequested()) {
+            if (accountError instanceof OutlookSidecarStoppedError) {
+              for (const line of accountError.logLines) {
+                appendSidecarLog(`[${index + 1}/${total}] ${line}`)
               }
             }
+
+            appendStepLog("Creation arretee par l'utilisateur.")
+            await OutlookBatchVpnService.closeChromeAfterManualStop(appendSubLog)
+
+            return 'abort'
           }
 
-          appendStepLog("Creation arretee par l'utilisateur.")
-          await OutlookBatchVpnService.closeChromeAfterManualStop(appendSubLog)
-          break
-        }
+          const detail: string = formatErrorMessage(accountError)
 
-        const detail: string = formatErrorMessage(accountError)
-
-        if (accountError instanceof OutlookSidecarError) {
-          for (const line of accountError.logLines) {
-            const alreadyLogged: boolean = logs.value.some(
-              (entry: JournalLine) =>
-                entry.text === line.trim() &&
-                (entry.level === 'sidecar' || entry.level === 'sidecarDetail' || entry.level === 'sidecarDeep'),
-            )
-
-            if (!alreadyLogged) {
-              appendSidecarLog(line)
+          if (accountError instanceof OutlookSidecarError) {
+            for (const line of accountError.logLines) {
+              appendSidecarLog(`[${index + 1}/${total}] ${line}`)
             }
           }
+
+          appendStepLog(`Echec sur le compte ${index + 1} / ${total} : ${detail}`)
+          abortAfterFailure = true
+
+          if (createdAccounts.value.length > 0) {
+            errorMessage.value = `${createdAccounts.value.length} compte(s) cree(s) avant l'echec (compte ${index + 1}) : ${detail}`
+          } else {
+            errorMessage.value = detail
+          }
+
+          return 'abort'
         }
-
-        appendStepLog(`Echec sur le compte ${index + 1} / ${total} : ${detail}`)
-
-        if (createdAccounts.value.length > 0) {
-          errorMessage.value = `${createdAccounts.value.length} compte(s) cree(s) avant l'echec (compte ${index + 1}) : ${detail}`
-        } else {
-          errorMessage.value = detail
+      },
+      (completed: number, poolTotal: number) => {
+        progressCurrent.value = completed
+        if (completed === poolTotal) {
+          progressCurrent.value = poolTotal
         }
-
-        break
-      }
-    }
+      },
+    )
 
     if (createdAccounts.value.length === total) {
       appendAccountLog(`Creation terminee : ${createdAccounts.value.length} / ${total} compte(s) enregistre(s).`)

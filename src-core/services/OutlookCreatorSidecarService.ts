@@ -14,6 +14,7 @@ import type { OutlookCreationOptions, OutlookSidecarResult } from '#src-core/typ
 import type { SidecarOutlookJsonLine } from '#src-core/types/response/sidecar-outlook-json.types'
 import { normalizeProcessStreamLine } from '#src-core/utils/decode-process-output'
 import { formatSidecarCliOption } from '#src-core/utils/sidecar-cli-args'
+import { SidecarActiveChildren } from '#src-core/utils/sidecar-active-children'
 import { Command, type Child, type TerminatedPayload } from '@tauri-apps/plugin-shell'
 
 export type { OutlookCreationOptions, OutlookSidecarResult } from '#src-core/types/response/outlook-sidecar.types'
@@ -193,36 +194,33 @@ function handleSidecarStreamPayload(payload: unknown, buffer: string[], onLog?: 
  * Lance le sidecar Python/nodriver pour creer un compte Outlook.
  */
 export class OutlookCreatorSidecarService {
-  /** Processus sidecar actuellement lance via Tauri. */
-  private static activeChild: Child | null = null
-  /** Flag d'arret manuel demande par l'utilisateur. */
   private static readonly stopSignal: { requested: boolean } = { requested: false }
+  private static readonly activeChildren: SidecarActiveChildren = new SidecarActiveChildren(
+    OutlookCreatorSidecarService.stopSignal,
+  )
 
   /**
    * Indique si l'utilisateur a demande l'arret pendant un await.
    * @returns {boolean} True si le sidecar doit etre considere comme arrete.
    */
   private static isStopRequested(): boolean {
-    return OutlookCreatorSidecarService.stopSignal.requested
+    return OutlookCreatorSidecarService.activeChildren.isStopRequested()
   }
 
   /**
-   * Arrete le sidecar Outlook actuellement lance, si present.
-   * @returns {Promise<boolean>} True si un processus actif a recu une demande d'arret.
+   * Reinitialise le flag d'arret avant un nouveau lot (une fois par lancement UI).
+   * @returns {void}
+   */
+  public static prepareBatch(): void {
+    OutlookCreatorSidecarService.activeChildren.resetStopSignal()
+  }
+
+  /**
+   * Arrete tous les sidecars Outlook actifs.
+   * @returns {Promise<boolean>} True si au moins un processus a recu une demande d'arret.
    */
   public static async stopCurrentCreation(): Promise<boolean> {
-    const child: Child | null = OutlookCreatorSidecarService.activeChild
-
-    if (child === null) {
-      OutlookCreatorSidecarService.stopSignal.requested = true
-
-      return false
-    }
-
-    OutlookCreatorSidecarService.stopSignal.requested = true
-    await child.kill()
-
-    return true
+    return OutlookCreatorSidecarService.activeChildren.stopAll()
   }
 
   /**
@@ -235,8 +233,6 @@ export class OutlookCreatorSidecarService {
     options: OutlookCreationOptions,
     onLog?: (line: string) => void,
   ): Promise<OutlookSidecarResult> {
-    OutlookCreatorSidecarService.stopSignal.requested = false
-
     const usedNamesJson: string = JSON.stringify(
       (options.usedNamePairs ?? []).map((pair: { firstName: string; lastName: string }): [string, string] => [
         pair.firstName,
@@ -252,6 +248,14 @@ export class OutlookCreatorSidecarService {
 
     if (options.skipDnsFlush) {
       sidecarArgs.push('--skip-dns-flush')
+    }
+
+    if (options.firstName?.trim()) {
+      sidecarArgs.push(formatSidecarCliOption('first-name', options.firstName.trim()))
+    }
+
+    if (options.lastName?.trim()) {
+      sidecarArgs.push(formatSidecarCliOption('last-name', options.lastName.trim()))
     }
 
     const command: Command<Uint8Array> = Command.sidecar(
@@ -278,9 +282,11 @@ export class OutlookCreatorSidecarService {
     )
 
     let result: TerminatedPayload
+    let spawnedChild: Child | null = null
 
     try {
-      OutlookCreatorSidecarService.activeChild = await command.spawn()
+      spawnedChild = await command.spawn()
+      OutlookCreatorSidecarService.activeChildren.register(spawnedChild)
       result = await closePromise
     } catch (executeError: unknown) {
       if (OutlookCreatorSidecarService.isStopRequested()) {
@@ -296,7 +302,9 @@ export class OutlookCreatorSidecarService {
 
       throw new OutlookSidecarError(message, stderrLines)
     } finally {
-      OutlookCreatorSidecarService.activeChild = null
+      if (spawnedChild !== null) {
+        OutlookCreatorSidecarService.activeChildren.unregister(spawnedChild)
+      }
     }
 
     if (OutlookCreatorSidecarService.isStopRequested()) {

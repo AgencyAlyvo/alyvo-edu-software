@@ -26,6 +26,10 @@ export type OutlookCreationOptions = {
   birthday: string
   /** Paires prenom/nom deja presentes en base (evite les doublons). */
   usedNamePairs?: readonly OutlookUsedNamePair[]
+  /** Prenom impose (parallele) ; sinon tire au sort dans le sidecar. */
+  firstName?: string
+  /** Nom impose (parallele) ; sinon tire au sort dans le sidecar. */
+  lastName?: string
   /** true si le flush DNS a deja ete fait par l'app avant le sidecar. */
   skipDnsFlush?: boolean
 }

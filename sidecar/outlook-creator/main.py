@@ -147,6 +147,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Ne pas executer ipconfig /flushdns (deja fait par l'app desktop avant Chrome).",
     )
+    parser.add_argument(
+        "--first-name",
+        default=None,
+        help="Prenom impose (creation parallele) ; sinon tire au sort.",
+    )
+    parser.add_argument(
+        "--last-name",
+        default=None,
+        help="Nom impose (creation parallele) ; sinon tire au sort.",
+    )
     return parser.parse_args()
 
 
@@ -162,6 +172,8 @@ async def create_outlook_nodriver(
     used_name_pairs: set[tuple[str, str]],
     *,
     skip_dns_flush: bool = False,
+    fixed_first_name: str | None = None,
+    fixed_last_name: str | None = None,
 ) -> dict[str, Any]:
     try:
         import nodriver as uc
@@ -171,10 +183,18 @@ async def create_outlook_nodriver(
     if used_name_pairs:
         log(f"Exclusion de {len(used_name_pairs)} combinaison(s) prenom/nom deja utilisee(s).")
 
-    try:
-        first_name, last_name = random_us_full_name(used_name_pairs)
-    except RuntimeError as error:
-        return {"ok": False, "error": str(error)}
+    first_name: str | None = fixed_first_name.strip() if fixed_first_name else None
+    last_name: str | None = fixed_last_name.strip() if fixed_last_name else None
+
+    if first_name and last_name:
+        pair: tuple[str, str] = (first_name, last_name)
+        if pair in used_name_pairs:
+            return {"ok": False, "error": f"Combinaison prenom/nom deja utilisee : {first_name} {last_name}"}
+    else:
+        try:
+            first_name, last_name = random_us_full_name(used_name_pairs)
+        except RuntimeError as error:
+            return {"ok": False, "error": str(error)}
 
     browser = None
     tab = None
@@ -264,6 +284,8 @@ async def main() -> int:
         args.birthday,
         used_name_pairs,
         skip_dns_flush=args.skip_dns_flush,
+        fixed_first_name=args.first_name,
+        fixed_last_name=args.last_name,
     )
     emit(result)
     return 0 if result.get("ok") else 1

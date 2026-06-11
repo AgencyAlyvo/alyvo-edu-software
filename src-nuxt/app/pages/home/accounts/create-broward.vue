@@ -5,8 +5,9 @@
       <div class="mt-1 space-y-2 text-sm text-[#9ba3bd]">
         <p>
           Inscrit sur le portail Broward College les comptes Outlook
-          <span class="text-[#c5cce0]">déjà en base</span> (prénom, nom, date de naissance, email personnel). Les
-          comptes sont traités <span class="text-[#c5cce0]">un par un</span>.
+          <span class="text-[#c5cce0]">déjà en base</span> (prénom, nom, date de naissance, email personnel).
+          Parallélisme configurable dans
+          <RouterLink to="/home/settings" class="text-[#9a65d5] underline">Paramètres</RouterLink>.
         </p>
         <ul class="list-inside list-disc space-y-1 pl-1">
           <li>
@@ -145,7 +146,6 @@
 <script lang="ts" setup>
 import type { ComputedRef, Ref } from 'vue'
 
-import { OUTLOOK_ACCOUNTS_PER_VPN_ROTATION } from '#src-core/constants/desktop-settings.constants'
 import {
   BrowardEnrollmentSidecarService,
   BrowardSidecarError,
@@ -157,6 +157,9 @@ import type { BrowardSidecarResult } from '#src-core/types/response/broward-side
 import type { ManagedAccount } from '#src-core/types/response/managed-accounts.types'
 import { listBrowardEligibleAccounts, toBrowardBirthdayIso } from '#src-core/utils/broward-eligible-accounts'
 import { formatErrorMessage } from '#src-core/utils/format-error-message'
+import type { ConcurrentPoolWorkerResult } from '#src-core/utils/run-concurrent-pool'
+import { runConcurrentPool } from '#src-core/utils/run-concurrent-pool'
+import { prepareSidecarWaveNetwork } from '#src-core/utils/sidecar-wave-network'
 
 import AlyvoListFilterField from '#src-nuxt/app/components/ui/AlyvoListFilterField.vue'
 import { useAlyvoDarkUi } from '#src-nuxt/app/composables/useAlyvoDarkUi'
@@ -388,118 +391,107 @@ const runEnrollment: () => Promise<void> = async (): Promise<void> => {
   const capsolverKey: string = desktopSettingsStore.capsolverApiKey.trim()
 
   try {
-    appendStepLog(`${targets.length} compte(s) a inscrire sur Broward (CapSolver + nodriver).`)
+    BrowardEnrollmentSidecarService.prepareBatch()
+    const maxConcurrent: number = desktopSettingsStore.browardEnrollmentMaxConcurrentInstances
+    let abortAfterFailure: boolean = false
 
-    for (let index: number = 0; index < targets.length; index += 1) {
-      if (isStopRequested()) {
-        appendStepLog('Inscription arretee avant le compte suivant.')
-        break
-      }
+    appendStepLog(
+      `${targets.length} compte(s) a inscrire — jusqu'a ${maxConcurrent} Chrome(s) en parallele (Parametres).`,
+    )
 
-      const account: ManagedAccount = targets[index]!
-      progressCurrent.value = index + 1
-
-      const isStartOfVpnBatch: boolean = index % OUTLOOK_ACCOUNTS_PER_VPN_ROTATION === 0
-      const batchNumber: number = Math.floor(index / OUTLOOK_ACCOUNTS_PER_VPN_ROTATION) + 1
-      const accountInBatch: number = (index % OUTLOOK_ACCOUNTS_PER_VPN_ROTATION) + 1
-
-      appendAccountLog(`=== Compte ${index + 1} / ${total} — #${account.id} ${account.outlookEmail} ===`)
-
-      if (isStartOfVpnBatch) {
-        if (desktopSettingsStore.isVpnRotationConfigured) {
-          appendStepLog(
-            `Reseau : Windscribe (${desktopSettingsStore.windscribeLocation}), flush DNS, puis Chrome (lot ${batchNumber}).`,
-          )
-          await OutlookBatchVpnService.prepareBeforeChrome({
-            windscribeCliPath: desktopSettingsStore.windscribeCliPath,
-            location: desktopSettingsStore.windscribeLocation,
-            closeChromeFirst: index > 0,
-            batchNumber,
-            onLog: appendSubLog,
-          })
-        } else if (index === 0) {
-          appendStepLog('Reseau : Windscribe non configure (voir Parametres).')
+    await runConcurrentPool(
+      targets,
+      maxConcurrent,
+      isStopRequested,
+      async (account: ManagedAccount, index: number): Promise<ConcurrentPoolWorkerResult> => {
+        if (abortAfterFailure || isStopRequested()) {
+          return 'abort'
         }
-      } else {
-        appendStepLog(
-          `Meme lot VPN (${accountInBatch}/${OUTLOOK_ACCOUNTS_PER_VPN_ROTATION}) : fermeture de Chrome avant relance.`,
-        )
-        await OutlookBatchVpnService.ensureChromeClosedBeforeSidecar(appendSubLog)
-      }
 
-      if (isStopRequested()) {
-        appendStepLog('Inscription arretee avant le lancement du sidecar.')
-        break
-      }
+        appendAccountLog(`=== Compte ${index + 1} / ${total} — #${account.id} ${account.outlookEmail} ===`)
 
-      const firstName: string = account.outlookFirstName?.trim() ?? ''
-      const lastName: string = account.outlookLastName?.trim() ?? ''
-      const email: string = account.outlookEmail?.trim().toLowerCase() ?? ''
-      const password: string = account.outlookEmailPassword?.trim() ?? ''
-      const birthday: string = toBrowardBirthdayIso(account.birthday)
-
-      appendSidecarLog(`Email : ${email}`)
-      appendSidecarLog(`Prenom / Nom : ${firstName} ${lastName}`)
-      appendSidecarLog(`Date de naissance : ${birthday}`)
-      appendSidecarLog('Demarrage du sidecar Broward :')
-
-      try {
-        const result: BrowardSidecarResult = await BrowardEnrollmentSidecarService.enrollAccount(
-          {
-            accountId: account.id,
-            firstName,
-            lastName,
-            birthday,
-            email,
-            password,
-          },
-          capsolverKey,
-          appendSidecarLog,
-        )
-
-        await store.updateAccount(account.id, { schoolRequestSent: true })
-
-        enrolledAccounts.value.push({
-          accountId: result.accountId,
-          email: result.email,
-          firstName,
-          lastName,
+        await prepareSidecarWaveNetwork({
+          index,
+          maxConcurrent,
+          isVpnConfigured: desktopSettingsStore.isVpnRotationConfigured,
+          windscribeCliPath: desktopSettingsStore.windscribeCliPath,
+          windscribeLocation: desktopSettingsStore.windscribeLocation,
+          onStepLog: appendStepLog,
+          onSubLog: appendSubLog,
         })
 
-        appendStepLog(`Compte #${account.id} inscrit — email ecole active : ${result.email}`)
-      } catch (accountError: unknown) {
-        if (accountError instanceof BrowardSidecarError) {
-          for (const line of accountError.logLines) {
-            const alreadyLogged: boolean = logs.value.some(
-              (entry: JournalLine) =>
-                entry.text === line.trim() &&
-                (entry.level === 'sidecar' || entry.level === 'sidecarDetail' || entry.level === 'sidecarDeep'),
-            )
+        if (isStopRequested()) {
+          return 'abort'
+        }
 
-            if (!alreadyLogged) {
-              appendSidecarLog(line)
+        const firstName: string = account.outlookFirstName?.trim() ?? ''
+        const lastName: string = account.outlookLastName?.trim() ?? ''
+        const email: string = account.outlookEmail?.trim().toLowerCase() ?? ''
+        const password: string = account.outlookEmailPassword?.trim() ?? ''
+        const birthday: string = toBrowardBirthdayIso(account.birthday)
+        const logPrefix: string = `[#${account.id}]`
+
+        appendSidecarLog(`${logPrefix} Email : ${email}`)
+        appendSidecarLog(`${logPrefix} Prenom / Nom : ${firstName} ${lastName}`)
+        appendSidecarLog(`${logPrefix} Demarrage sidecar Broward :`)
+
+        try {
+          const result: BrowardSidecarResult = await BrowardEnrollmentSidecarService.enrollAccount(
+            {
+              accountId: account.id,
+              firstName,
+              lastName,
+              birthday,
+              email,
+              password,
+            },
+            capsolverKey,
+            (line: string) => appendSidecarLog(`${logPrefix} ${line}`),
+          )
+
+          await store.updateAccount(account.id, { schoolRequestSent: true })
+
+          enrolledAccounts.value.push({
+            accountId: result.accountId,
+            email: result.email,
+            firstName,
+            lastName,
+          })
+
+          appendStepLog(`Compte #${account.id} inscrit — ${result.email}`)
+
+          return 'done'
+        } catch (accountError: unknown) {
+          if (accountError instanceof BrowardSidecarError) {
+            for (const line of accountError.logLines) {
+              appendSidecarLog(`${logPrefix} ${line}`)
             }
           }
+
+          if (accountError instanceof BrowardSidecarStoppedError || isStopRequested()) {
+            appendStepLog("Inscription arretee par l'utilisateur.")
+            await OutlookBatchVpnService.closeChromeAfterManualStop(appendSubLog)
+
+            return 'abort'
+          }
+
+          const detail: string = formatErrorMessage(accountError)
+          appendStepLog(`Echec sur le compte ${index + 1} / ${total} : ${detail}`)
+          abortAfterFailure = true
+
+          if (enrolledAccounts.value.length > 0) {
+            errorMessage.value = `${enrolledAccounts.value.length} inscription(s) reussie(s) avant l'echec : ${detail}`
+          } else {
+            errorMessage.value = detail
+          }
+
+          return 'abort'
         }
-
-        if (accountError instanceof BrowardSidecarStoppedError || isStopRequested()) {
-          appendStepLog("Inscription arretee par l'utilisateur.")
-          await OutlookBatchVpnService.closeChromeAfterManualStop(appendSubLog)
-          break
-        }
-
-        const detail: string = formatErrorMessage(accountError)
-        appendStepLog(`Echec sur le compte ${index + 1} / ${total} : ${detail}`)
-
-        if (enrolledAccounts.value.length > 0) {
-          errorMessage.value = `${enrolledAccounts.value.length} inscription(s) reussie(s) avant l'echec : ${detail}`
-        } else {
-          errorMessage.value = detail
-        }
-
-        break
-      }
-    }
+      },
+      (completed: number) => {
+        progressCurrent.value = completed
+      },
+    )
 
     if (enrolledAccounts.value.length === total) {
       appendAccountLog(`Inscription terminee : ${enrolledAccounts.value.length} / ${total} compte(s).`)
