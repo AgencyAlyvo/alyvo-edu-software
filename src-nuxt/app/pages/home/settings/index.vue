@@ -77,6 +77,61 @@
         </div>
       </AlyvoListFilterField>
 
+      <div class="grid gap-3 rounded-md border border-[#2f3d67]/80 bg-[#050917]/40 p-3">
+        <h2 class="text-sm font-medium text-white">Instances Chrome / nodriver simultanées</h2>
+        <p class="text-xs text-[#9ba3bd]">
+          Nombre maximum de fenêtres Chrome ouvertes en parallèle pour chaque automatisation (1 à 10).
+        </p>
+
+        <AlyvoListFilterField
+          label="Création Outlook"
+          hint="Ex. 2 : jusqu'à 2 inscriptions Outlook en parallèle."
+        >
+          <UInput
+            v-model.number="settingsStore.outlookMaxConcurrentInstances"
+            type="number"
+            :min="MIN_INSTANCES"
+            :max="MAX_INSTANCES"
+            variant="none"
+            :ui="inputUi"
+            :disabled="!isTauri"
+            class="max-w-[120px]"
+          />
+        </AlyvoListFilterField>
+
+        <AlyvoListFilterField
+          label="Inscription Broward"
+          hint="Ex. 5 : jusqu'à 5 inscriptions Broward en parallèle."
+        >
+          <UInput
+            v-model.number="settingsStore.browardEnrollmentMaxConcurrentInstances"
+            type="number"
+            :min="MIN_INSTANCES"
+            :max="MAX_INSTANCES"
+            variant="none"
+            :ui="inputUi"
+            :disabled="!isTauri"
+            class="max-w-[120px]"
+          />
+        </AlyvoListFilterField>
+
+        <AlyvoListFilterField
+          label="Activation Student ID Broward"
+          hint="Ex. 7 : jusqu'à 7 activations en parallèle."
+        >
+          <UInput
+            v-model.number="settingsStore.browardActivationMaxConcurrentInstances"
+            type="number"
+            :min="MIN_INSTANCES"
+            :max="MAX_INSTANCES"
+            variant="none"
+            :ui="inputUi"
+            :disabled="!isTauri"
+            class="max-w-[120px]"
+          />
+        </AlyvoListFilterField>
+      </div>
+
       <div class="flex flex-wrap gap-2">
         <UButton
           type="submit"
@@ -115,8 +170,11 @@
     </section>
 
     <section class="rounded-lg border border-[#2f3d67] bg-[#050917] p-4 text-sm text-[#9ba3bd]">
-      <h2 class="mb-2 font-medium text-white">Création Outlook par lots de 2</h2>
-      <p>Avant chaque lot de 2 comptes (y compris le premier), l'application exécute automatiquement :</p>
+      <h2 class="mb-2 font-medium text-white">Réseau et VPN</h2>
+      <p>
+        Avec <span class="text-[#c5cce0]">1 instance</span>, rotation VPN tous les 2 comptes (comportement historique).
+        Avec <span class="text-[#c5cce0]">2+ instances</span>, rotation VPN au début de chaque vague parallèle. Étapes :
+      </p>
       <ol class="mt-2 list-inside list-decimal space-y-1 pl-1">
         <li>Fermeture de Chrome (à partir du 3<sup>e</sup> compte)</li>
         <li><span class="text-[#c5cce0]">windscribe-cli connect « localisation »</span></li>
@@ -132,6 +190,10 @@ import type { Ref } from 'vue'
 
 import { open } from '@tauri-apps/plugin-dialog'
 
+import {
+  MAX_SIDECAR_CONCURRENT_INSTANCES,
+  MIN_SIDECAR_CONCURRENT_INSTANCES,
+} from '#src-core/constants/desktop-settings.constants'
 import AlyvoListFilterField from '#src-nuxt/app/components/ui/AlyvoListFilterField.vue'
 import { useAlyvoDarkUi } from '#src-nuxt/app/composables/useAlyvoDarkUi'
 import { useIsTauri } from '#src-nuxt/app/composables/useIsTauri'
@@ -143,6 +205,8 @@ const { isTauri } = useIsTauri()
 const settingsStore: ReturnType<typeof useDesktopSettingsStore> = useDesktopSettingsStore()
 const { inputUi, primaryButtonClass } = useAlyvoDarkUi()
 const showCapSolverKey: Ref<boolean> = ref(false)
+const MIN_INSTANCES: number = MIN_SIDECAR_CONCURRENT_INSTANCES
+const MAX_INSTANCES: number = MAX_SIDECAR_CONCURRENT_INSTANCES
 
 onMounted((): void => {
   settingsStore.load()

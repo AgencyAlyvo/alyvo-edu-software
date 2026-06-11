@@ -10,6 +10,7 @@ import type {
 import type { SidecarBrowardStudentIdJsonLine } from '#src-core/types/response/sidecar-broward-student-id-json.types'
 import { normalizeProcessStreamLine } from '#src-core/utils/decode-process-output'
 import { readMybcScreenshotsFromPaths } from '#src-core/utils/mybc-screenshot-files'
+import { SidecarActiveChildren } from '#src-core/utils/sidecar-active-children'
 import type { BrowardStudentIdMybcScreenshots } from '#src-core/types/response/broward-student-id-sidecar.types'
 import { Command, type Child, type TerminatedPayload } from '@tauri-apps/plugin-shell'
 
@@ -185,33 +186,32 @@ function handleSidecarStreamPayload(payload: unknown, buffer: string[], onLog?: 
  * Lance le sidecar de recuperation Student ID Broward.
  */
 export class BrowardStudentIdSidecarService {
-  private static activeChild: Child | null = null
   private static readonly stopSignal: { requested: boolean } = { requested: false }
+  private static readonly activeChildren: SidecarActiveChildren = new SidecarActiveChildren(
+    BrowardStudentIdSidecarService.stopSignal,
+  )
 
   /**
    * @returns {boolean} True si arret demande.
    */
   private static isStopRequested(): boolean {
-    return BrowardStudentIdSidecarService.stopSignal.requested
+    return BrowardStudentIdSidecarService.activeChildren.isStopRequested()
   }
 
   /**
-   * Arrete le sidecar en cours.
+   * Reinitialise le flag d'arret avant un nouveau lot.
+   * @returns {void}
+   */
+  public static prepareBatch(): void {
+    BrowardStudentIdSidecarService.activeChildren.resetStopSignal()
+  }
+
+  /**
+   * Arrete tous les sidecars Student ID en cours.
    * @returns {Promise<boolean>} True si kill envoye.
    */
   public static async stopCurrentActivation(): Promise<boolean> {
-    const child: Child | null = BrowardStudentIdSidecarService.activeChild
-
-    if (child === null) {
-      BrowardStudentIdSidecarService.stopSignal.requested = true
-
-      return false
-    }
-
-    BrowardStudentIdSidecarService.stopSignal.requested = true
-    await child.kill()
-
-    return true
+    return BrowardStudentIdSidecarService.activeChildren.stopAll()
   }
 
   /**
@@ -224,8 +224,6 @@ export class BrowardStudentIdSidecarService {
     options: BrowardStudentIdOptions,
     onLog?: (line: string) => void,
   ): Promise<BrowardStudentIdSidecarOutcome> {
-    BrowardStudentIdSidecarService.stopSignal.requested = false
-
     const accountJson: string = JSON.stringify({
       accountId: options.accountId,
       email: options.email,
@@ -264,9 +262,11 @@ export class BrowardStudentIdSidecarService {
     )
 
     let result: TerminatedPayload
+    let spawnedChild: Child | null = null
 
     try {
-      BrowardStudentIdSidecarService.activeChild = await command.spawn()
+      spawnedChild = await command.spawn()
+      BrowardStudentIdSidecarService.activeChildren.register(spawnedChild)
       result = await closePromise
     } catch (executeError: unknown) {
       if (BrowardStudentIdSidecarService.isStopRequested()) {
@@ -282,7 +282,9 @@ export class BrowardStudentIdSidecarService {
 
       throw new BrowardStudentIdSidecarError(message, stderrLines)
     } finally {
-      BrowardStudentIdSidecarService.activeChild = null
+      if (spawnedChild !== null) {
+        BrowardStudentIdSidecarService.activeChildren.unregister(spawnedChild)
+      }
     }
 
     if (BrowardStudentIdSidecarService.isStopRequested()) {

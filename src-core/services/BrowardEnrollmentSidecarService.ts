@@ -5,6 +5,7 @@ import { BROWARD_ENROLLMENT_SIDECAR_NAME } from '#src-core/constants/broward-sid
 import type { BrowardEnrollmentOptions, BrowardSidecarResult } from '#src-core/types/response/broward-sidecar.types'
 import type { SidecarBrowardJsonLine } from '#src-core/types/response/sidecar-broward-json.types'
 import { normalizeProcessStreamLine } from '#src-core/utils/decode-process-output'
+import { SidecarActiveChildren } from '#src-core/utils/sidecar-active-children'
 import { Command, type Child, type TerminatedPayload } from '@tauri-apps/plugin-shell'
 
 export type { BrowardEnrollmentOptions, BrowardSidecarResult } from '#src-core/types/response/broward-sidecar.types'
@@ -168,33 +169,32 @@ function handleSidecarStreamPayload(payload: unknown, buffer: string[], onLog?: 
  * Lance le sidecar d'inscription Broward.
  */
 export class BrowardEnrollmentSidecarService {
-  private static activeChild: Child | null = null
   private static readonly stopSignal: { requested: boolean } = { requested: false }
+  private static readonly activeChildren: SidecarActiveChildren = new SidecarActiveChildren(
+    BrowardEnrollmentSidecarService.stopSignal,
+  )
 
   /**
    * @returns {boolean} True si arret demande.
    */
   private static isStopRequested(): boolean {
-    return BrowardEnrollmentSidecarService.stopSignal.requested
+    return BrowardEnrollmentSidecarService.activeChildren.isStopRequested()
   }
 
   /**
-   * Arrete le sidecar en cours.
+   * Reinitialise le flag d'arret avant un nouveau lot.
+   * @returns {void}
+   */
+  public static prepareBatch(): void {
+    BrowardEnrollmentSidecarService.activeChildren.resetStopSignal()
+  }
+
+  /**
+   * Arrete tous les sidecars Broward en cours.
    * @returns {Promise<boolean>} True si kill envoye.
    */
   public static async stopCurrentEnrollment(): Promise<boolean> {
-    const child: Child | null = BrowardEnrollmentSidecarService.activeChild
-
-    if (child === null) {
-      BrowardEnrollmentSidecarService.stopSignal.requested = true
-
-      return false
-    }
-
-    BrowardEnrollmentSidecarService.stopSignal.requested = true
-    await child.kill()
-
-    return true
+    return BrowardEnrollmentSidecarService.activeChildren.stopAll()
   }
 
   /**
@@ -209,8 +209,6 @@ export class BrowardEnrollmentSidecarService {
     capsolverApiKey: string,
     onLog?: (line: string) => void,
   ): Promise<BrowardSidecarResult> {
-    BrowardEnrollmentSidecarService.stopSignal.requested = false
-
     const apiKey: string = capsolverApiKey.trim()
     if (apiKey.length === 0) {
       throw new BrowardSidecarError('Cle API CapSolver manquante. Configurez-la dans Parametres.')
@@ -262,9 +260,11 @@ export class BrowardEnrollmentSidecarService {
     )
 
     let result: TerminatedPayload
+    let spawnedChild: Child | null = null
 
     try {
-      BrowardEnrollmentSidecarService.activeChild = await command.spawn()
+      spawnedChild = await command.spawn()
+      BrowardEnrollmentSidecarService.activeChildren.register(spawnedChild)
       result = await closePromise
     } catch (executeError: unknown) {
       if (BrowardEnrollmentSidecarService.isStopRequested()) {
@@ -280,7 +280,9 @@ export class BrowardEnrollmentSidecarService {
 
       throw new BrowardSidecarError(message, stderrLines)
     } finally {
-      BrowardEnrollmentSidecarService.activeChild = null
+      if (spawnedChild !== null) {
+        BrowardEnrollmentSidecarService.activeChildren.unregister(spawnedChild)
+      }
     }
 
     if (BrowardEnrollmentSidecarService.isStopRequested()) {

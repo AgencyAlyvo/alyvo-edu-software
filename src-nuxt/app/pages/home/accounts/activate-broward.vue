@@ -5,8 +5,9 @@
       <div class="mt-1 space-y-2 text-sm text-[#9ba3bd]">
         <p>
           Récupère le <span class="text-[#c5cce0]">Student ID</span> et l'email
-          <span class="text-[#c5cce0]">@mail.broward.edu</span> depuis Outlook, puis ouvre BC One Access (OneLogin). Les
-          comptes sont traités <span class="text-[#c5cce0]">un par un</span>.
+          <span class="text-[#c5cce0]">@mail.broward.edu</span> depuis Outlook, puis ouvre BC One Access (OneLogin).
+          Parallélisme configurable dans
+          <RouterLink to="/home/settings" class="text-[#9a65d5] underline">Paramètres</RouterLink>.
         </p>
         <ul class="list-inside list-disc space-y-1 pl-1">
           <li>
@@ -182,7 +183,6 @@
 <script lang="ts" setup>
 import type { ComputedRef, Ref } from 'vue'
 
-import { OUTLOOK_ACCOUNTS_PER_VPN_ROTATION } from '#src-core/constants/desktop-settings.constants'
 import {
   BrowardStudentIdSidecarError,
   BrowardStudentIdSidecarService,
@@ -197,6 +197,9 @@ import {
   toBrowardBirthdayIso,
 } from '#src-core/utils/broward-student-id-eligible-accounts'
 import { formatErrorMessage } from '#src-core/utils/format-error-message'
+import type { ConcurrentPoolWorkerResult } from '#src-core/utils/run-concurrent-pool'
+import { runConcurrentPool } from '#src-core/utils/run-concurrent-pool'
+import { prepareSidecarWaveNetwork } from '#src-core/utils/sidecar-wave-network'
 
 import AlyvoListFilterField from '#src-nuxt/app/components/ui/AlyvoListFilterField.vue'
 import { useAlyvoDarkUi } from '#src-nuxt/app/composables/useAlyvoDarkUi'
@@ -432,149 +435,137 @@ const runActivation: () => Promise<void> = async (): Promise<void> => {
   const targets: ManagedAccount[] = eligibleAccounts.value.slice(0, total)
 
   try {
-    appendStepLog(`${targets.length} compte(s) à traiter pour Student ID (Outlook + BC One Access).`)
+    BrowardStudentIdSidecarService.prepareBatch()
+    const maxConcurrent: number = desktopSettingsStore.browardActivationMaxConcurrentInstances
+    let abortAfterFailure: boolean = false
 
-    for (let index: number = 0; index < targets.length; index += 1) {
-      if (isStopRequested()) {
-        appendStepLog('Activation arrêtée avant le compte suivant.')
-        break
-      }
+    appendStepLog(
+      `${targets.length} compte(s) à traiter — jusqu'à ${maxConcurrent} Chrome(s) en parallèle (Paramètres).`,
+    )
 
-      const account: ManagedAccount = targets[index]!
-      progressCurrent.value = index + 1
-
-      const isStartOfVpnBatch: boolean = index % OUTLOOK_ACCOUNTS_PER_VPN_ROTATION === 0
-      const batchNumber: number = Math.floor(index / OUTLOOK_ACCOUNTS_PER_VPN_ROTATION) + 1
-      const accountInBatch: number = (index % OUTLOOK_ACCOUNTS_PER_VPN_ROTATION) + 1
-
-      appendAccountLog(`=== Compte ${index + 1} / ${total} — #${account.id} ${account.outlookEmail} ===`)
-
-      if (isStartOfVpnBatch) {
-        if (desktopSettingsStore.isVpnRotationConfigured) {
-          appendStepLog(
-            `Réseau : Windscribe (${desktopSettingsStore.windscribeLocation}), flush DNS, puis Chrome (lot ${batchNumber}).`,
-          )
-          await OutlookBatchVpnService.prepareBeforeChrome({
-            windscribeCliPath: desktopSettingsStore.windscribeCliPath,
-            location: desktopSettingsStore.windscribeLocation,
-            closeChromeFirst: index > 0,
-            batchNumber,
-            onLog: appendSubLog,
-          })
-        } else if (index === 0) {
-          appendStepLog('Réseau : Windscribe non configuré (voir Paramètres).')
-        }
-      } else {
-        appendStepLog(
-          `Même lot VPN (${accountInBatch}/${OUTLOOK_ACCOUNTS_PER_VPN_ROTATION}) : fermeture de Chrome avant relance.`,
-        )
-        await OutlookBatchVpnService.ensureChromeClosedBeforeSidecar(appendSubLog)
-      }
-
-      if (isStopRequested()) {
-        appendStepLog('Activation arrêtée avant le lancement du sidecar.')
-        break
-      }
-
-      const email: string = account.outlookEmail?.trim().toLowerCase() ?? ''
-      const password: string = account.outlookEmailPassword?.trim() ?? ''
-      const birthday: string = toBrowardBirthdayIso(account.birthday)
-
-      appendSidecarLog(`Email Outlook : ${email}`)
-      appendSidecarLog(`Date de naissance : ${birthday}`)
-      appendSidecarLog('Démarrage du sidecar Student ID :')
-
-      try {
-        const outcome: BrowardStudentIdSidecarOutcome = await BrowardStudentIdSidecarService.activateAccount(
-          {
-            accountId: account.id,
-            email,
-            password,
-            birthday,
-          },
-          appendSidecarLog,
-        )
-
-        if (outcome.type === 'skipped') {
-          skippedAccounts.value.push({
-            accountId: account.id,
-            outlookEmail: email,
-          })
-          appendStepLog(`Compte #${account.id} ignoré — mail « Your student ID has arrived » pas encore reçu.`)
-          continue
+    await runConcurrentPool(
+      targets,
+      maxConcurrent,
+      isStopRequested,
+      async (account: ManagedAccount, index: number): Promise<ConcurrentPoolWorkerResult> => {
+        if (abortAfterFailure || isStopRequested()) {
+          return 'abort'
         }
 
-        const updatePayload: {
-          schoolEmail: string
-          studentId: string
-          schoolEmailActivated: boolean
-          schoolEmailPassword?: string | null
-        } = {
-          schoolEmail: outcome.result.schoolEmail,
-          studentId: outcome.result.studentId,
-          schoolEmailActivated: true,
-        }
+        appendAccountLog(`=== Compte ${index + 1} / ${total} — #${account.id} ${account.outlookEmail} ===`)
 
-        if (outcome.result.schoolEmailPassword) {
-          updatePayload.schoolEmailPassword = outcome.result.schoolEmailPassword
-        }
-
-        await store.updateAccount(account.id, updatePayload)
-
-        if (outcome.result.mybcScreenshots) {
-          appendStepLog('Enregistrement des captures myBC sur S3 (edu/dev|staging|prod)...')
-          try {
-            await store.uploadMybcScreenshots(account.id, outcome.result.mybcScreenshots)
-            appendSubLog('Captures myBC (Student Home + Prospect menu) enregistrees sur S3.')
-          } catch (uploadError: unknown) {
-            const uploadMessage: string =
-              uploadError instanceof Error ? uploadError.message : 'Echec upload captures myBC'
-            appendSubLog(`Echec upload S3 : ${uploadMessage}`)
-          }
-        } else {
-          appendSubLog('Aucune capture myBC a envoyer (fichiers sidecar non transmis).')
-        }
-
-        activatedAccounts.value.push({
-          accountId: outcome.result.accountId,
-          schoolEmail: outcome.result.schoolEmail,
-          studentId: outcome.result.studentId,
+        await prepareSidecarWaveNetwork({
+          index,
+          maxConcurrent,
+          isVpnConfigured: desktopSettingsStore.isVpnRotationConfigured,
+          windscribeCliPath: desktopSettingsStore.windscribeCliPath,
+          windscribeLocation: desktopSettingsStore.windscribeLocation,
+          onStepLog: appendStepLog,
+          onSubLog: appendSubLog,
         })
 
-        appendStepLog(`Compte #${account.id} activé — ${outcome.result.schoolEmail} (${outcome.result.studentId})`)
-      } catch (accountError: unknown) {
-        if (accountError instanceof BrowardStudentIdSidecarError) {
-          for (const line of accountError.logLines) {
-            const alreadyLogged: boolean = logs.value.some(
-              (entry: JournalLine) =>
-                entry.text === line.trim() &&
-                (entry.level === 'sidecar' || entry.level === 'sidecarDetail' || entry.level === 'sidecarDeep'),
-            )
+        if (isStopRequested()) {
+          return 'abort'
+        }
 
-            if (!alreadyLogged) {
-              appendSidecarLog(line)
+        const email: string = account.outlookEmail?.trim().toLowerCase() ?? ''
+        const password: string = account.outlookEmailPassword?.trim() ?? ''
+        const birthday: string = toBrowardBirthdayIso(account.birthday)
+        const logPrefix: string = `[#${account.id}]`
+
+        appendSidecarLog(`${logPrefix} Email Outlook : ${email}`)
+        appendSidecarLog(`${logPrefix} Demarrage sidecar Student ID :`)
+
+        try {
+          const outcome: BrowardStudentIdSidecarOutcome = await BrowardStudentIdSidecarService.activateAccount(
+            {
+              accountId: account.id,
+              email,
+              password,
+              birthday,
+            },
+            (line: string) => appendSidecarLog(`${logPrefix} ${line}`),
+          )
+
+          if (outcome.type === 'skipped') {
+            skippedAccounts.value.push({
+              accountId: account.id,
+              outlookEmail: email,
+            })
+            appendStepLog(`Compte #${account.id} ignoré — mail Student ID pas encore reçu.`)
+
+            return 'done'
+          }
+
+          const updatePayload: {
+            schoolEmail: string
+            studentId: string
+            schoolEmailActivated: boolean
+            schoolEmailPassword?: string | null
+          } = {
+            schoolEmail: outcome.result.schoolEmail,
+            studentId: outcome.result.studentId,
+            schoolEmailActivated: true,
+          }
+
+          if (outcome.result.schoolEmailPassword) {
+            updatePayload.schoolEmailPassword = outcome.result.schoolEmailPassword
+          }
+
+          await store.updateAccount(account.id, updatePayload)
+
+          if (outcome.result.mybcScreenshots) {
+            appendStepLog(`Compte #${account.id} — upload captures myBC...`)
+            try {
+              await store.uploadMybcScreenshots(account.id, outcome.result.mybcScreenshots)
+              appendSubLog(`${logPrefix} Captures myBC enregistrees sur S3.`)
+            } catch (uploadError: unknown) {
+              const uploadMessage: string =
+                uploadError instanceof Error ? uploadError.message : 'Echec upload captures myBC'
+              appendSubLog(`${logPrefix} Echec upload S3 : ${uploadMessage}`)
             }
           }
+
+          activatedAccounts.value.push({
+            accountId: outcome.result.accountId,
+            schoolEmail: outcome.result.schoolEmail,
+            studentId: outcome.result.studentId,
+          })
+
+          appendStepLog(`Compte #${account.id} activé — ${outcome.result.schoolEmail} (${outcome.result.studentId})`)
+
+          return 'done'
+        } catch (accountError: unknown) {
+          if (accountError instanceof BrowardStudentIdSidecarError) {
+            for (const line of accountError.logLines) {
+              appendSidecarLog(`${logPrefix} ${line}`)
+            }
+          }
+
+          if (accountError instanceof BrowardStudentIdSidecarStoppedError || isStopRequested()) {
+            appendStepLog("Activation arrêtée par l'utilisateur.")
+            await OutlookBatchVpnService.closeChromeAfterManualStop(appendSubLog)
+
+            return 'abort'
+          }
+
+          const detail: string = formatErrorMessage(accountError)
+          appendStepLog(`Échec sur le compte ${index + 1} / ${total} : ${detail}`)
+          abortAfterFailure = true
+
+          if (activatedAccounts.value.length > 0 || skippedAccounts.value.length > 0) {
+            errorMessage.value = `${activatedAccounts.value.length} activation(s) et ${skippedAccounts.value.length} ignoré(s) avant l'échec : ${detail}`
+          } else {
+            errorMessage.value = detail
+          }
+
+          return 'abort'
         }
-
-        if (accountError instanceof BrowardStudentIdSidecarStoppedError || isStopRequested()) {
-          appendStepLog("Activation arrêtée par l'utilisateur.")
-          await OutlookBatchVpnService.closeChromeAfterManualStop(appendSubLog)
-          break
-        }
-
-        const detail: string = formatErrorMessage(accountError)
-        appendStepLog(`Échec sur le compte ${index + 1} / ${total} : ${detail}`)
-
-        if (activatedAccounts.value.length > 0 || skippedAccounts.value.length > 0) {
-          errorMessage.value = `${activatedAccounts.value.length} activation(s) et ${skippedAccounts.value.length} ignoré(s) avant l'échec : ${detail}`
-        } else {
-          errorMessage.value = detail
-        }
-
-        break
-      }
-    }
+      },
+      (completed: number) => {
+        progressCurrent.value = completed
+      },
+    )
 
     if (activatedAccounts.value.length === total) {
       appendAccountLog(`Activation terminée : ${activatedAccounts.value.length} / ${total} compte(s).`)
