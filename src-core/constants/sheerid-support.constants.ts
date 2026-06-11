@@ -2,7 +2,14 @@
 export const SHEERID_SUPPORT_EMAIL: string = 'support@sheerid.com'
 
 /** Modele de message a envoyer au support SheerID. */
-export const SHEERID_SUPPORT_MESSAGE: string = `I have submitted my valid documents in accordance with the instructions provided by the support team. These documents clearly display my student information, including my first name, last name, educational institution, admission details, and all the information referenced in the support ticket.
-I kindly request your assistance in resolving this issue as soon as possible. I need my student status to be verified so that I can activate Cursor Student to eligible students.
-Thank you for your time and consideration. I look forward to your response.
+export const SHEERID_SUPPORT_MESSAGE: string = `Hello SheerID Verification Support Team,
+
+Brand/Offer: Cursor Student Offer
+
+Issue: My verification request appears to be pending despite having submitted the required documentation. I have already provided valid documents that clearly display my first name, last name, educational institution, admission details, and other information requested by the support team.
+
+I kindly ask for your assistance in reviewing my documents and completing the verification process as soon as possible, as I need my student status to be verified in order to activate the Cursor Student offer.
+
+Thank you for your time and assistance. I look forward to your response.
+
 Kind regards,`

@@ -19,6 +19,7 @@ from collections.abc import Callable
 from typing import Any
 
 from email_builder import build_outlook_email
+from nodriver_window_layout import apply_nodriver_window_layout
 from outlook_password import generate_outlook_password, validate_outlook_password
 from outlook_signup_flow import SignupCredentials, run_outlook_signup
 from us_names import parse_used_name_pairs, random_us_full_name
@@ -157,6 +158,18 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Nom impose (creation parallele) ; sinon tire au sort.",
     )
+    parser.add_argument(
+        "--window-slot",
+        type=int,
+        default=None,
+        help="Index fenetre dans la vague parallele (0-based).",
+    )
+    parser.add_argument(
+        "--window-slots",
+        type=int,
+        default=None,
+        help="Nombre d'instances Chrome simultanees pour le placement fenetre.",
+    )
     return parser.parse_args()
 
 
@@ -174,6 +187,8 @@ async def create_outlook_nodriver(
     skip_dns_flush: bool = False,
     fixed_first_name: str | None = None,
     fixed_last_name: str | None = None,
+    window_slot: int | None = None,
+    window_slots: int | None = None,
 ) -> dict[str, Any]:
     try:
         import nodriver as uc
@@ -214,6 +229,14 @@ async def create_outlook_nodriver(
             flush_dns_if_windows(log)
         browser = await uc.start(headless=False)
         tab = await browser.get("about:blank")
+
+        if window_slot is not None and window_slots is not None:
+            await apply_nodriver_window_layout(
+                tab,
+                slot=window_slot,
+                slots=window_slots,
+                log_fn=log,
+            )
 
         credentials: SignupCredentials = await asyncio.wait_for(
             run_outlook_signup(
@@ -286,6 +309,8 @@ async def main() -> int:
         skip_dns_flush=args.skip_dns_flush,
         fixed_first_name=args.first_name,
         fixed_last_name=args.last_name,
+        window_slot=args.window_slot,
+        window_slots=args.window_slots,
     )
     emit(result)
     return 0 if result.get("ok") else 1

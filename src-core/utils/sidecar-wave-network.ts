@@ -1,5 +1,6 @@
 import { OUTLOOK_ACCOUNTS_PER_VPN_ROTATION } from '#src-core/constants/desktop-settings.constants'
 import { OutlookBatchVpnService } from '#src-core/services/OutlookBatchVpnService'
+import { waitForNoActiveSidecarSlots } from '#src-core/utils/sidecar-wave-coordinator'
 
 /**
  * Prepare le reseau (VPN + flush DNS) avant une vague de sidecars.
@@ -33,6 +34,11 @@ export async function prepareSidecarWaveNetwork(options: {
       return
     }
 
+    if (index > 0) {
+      onSubLog('Attente : fin des instance(s) Chrome de la vague precedente...')
+      await waitForNoActiveSidecarSlots()
+    }
+
     if (isVpnConfigured) {
       onStepLog(
         `Reseau : Windscribe (${windscribeLocation}), flush DNS, puis jusqu'a ${maxConcurrent} Chrome(s) (vague ${waveNumber}).`,
@@ -40,7 +46,7 @@ export async function prepareSidecarWaveNetwork(options: {
       await OutlookBatchVpnService.prepareBeforeChrome({
         windscribeCliPath,
         location: windscribeLocation,
-        closeChromeFirst: index > 0,
+        closeChromeFirst: false,
         batchNumber: waveNumber,
         onLog: onSubLog,
       })

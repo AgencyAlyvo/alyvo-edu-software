@@ -8,6 +8,10 @@ export type BrowardEnrollmentOptions = {
   birthday: string
   email: string
   password: string
+  /** Slot fenetre Chrome (0-based) dans la vague parallele. */
+  windowSlot?: number
+  /** Nombre d'instances Chrome simultanees pour le placement fenetre. */
+  windowSlots?: number
 }
 
 /**

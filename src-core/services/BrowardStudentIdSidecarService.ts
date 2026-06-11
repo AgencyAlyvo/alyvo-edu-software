@@ -10,6 +10,7 @@ import type {
 import type { SidecarBrowardStudentIdJsonLine } from '#src-core/types/response/sidecar-broward-student-id-json.types'
 import { normalizeProcessStreamLine } from '#src-core/utils/decode-process-output'
 import { readMybcScreenshotsFromPaths } from '#src-core/utils/mybc-screenshot-files'
+import { appendSidecarWindowLayoutCliArgs } from '#src-core/utils/sidecar-cli-args'
 import { SidecarActiveChildren } from '#src-core/utils/sidecar-active-children'
 import type { BrowardStudentIdMybcScreenshots } from '#src-core/types/response/broward-student-id-sidecar.types'
 import { Command, type Child, type TerminatedPayload } from '@tauri-apps/plugin-shell'
@@ -231,9 +232,18 @@ export class BrowardStudentIdSidecarService {
       birthday: options.birthday,
     })
 
+    const sidecarArgs: string[] = ['--account-json', accountJson]
+
+    if (options.windowSlots !== undefined && options.windowSlot !== undefined) {
+      appendSidecarWindowLayoutCliArgs(sidecarArgs, {
+        windowSlot: options.windowSlot,
+        windowSlots: options.windowSlots,
+      })
+    }
+
     const command: Command<Uint8Array> = Command.sidecar(
       BROWARD_STUDENT_ID_SIDECAR_NAME,
-      ['--account-json', accountJson],
+      sidecarArgs,
       {
         encoding: 'raw',
         env: {

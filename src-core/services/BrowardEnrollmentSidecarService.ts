@@ -5,6 +5,7 @@ import { BROWARD_ENROLLMENT_SIDECAR_NAME } from '#src-core/constants/broward-sid
 import type { BrowardEnrollmentOptions, BrowardSidecarResult } from '#src-core/types/response/broward-sidecar.types'
 import type { SidecarBrowardJsonLine } from '#src-core/types/response/sidecar-broward-json.types'
 import { normalizeProcessStreamLine } from '#src-core/utils/decode-process-output'
+import { appendSidecarWindowLayoutCliArgs } from '#src-core/utils/sidecar-cli-args'
 import { SidecarActiveChildren } from '#src-core/utils/sidecar-active-children'
 import { Command, type Child, type TerminatedPayload } from '@tauri-apps/plugin-shell'
 
@@ -235,9 +236,18 @@ export class BrowardEnrollmentSidecarService {
       },
     }
 
+    const sidecarArgs: string[] = ['--account-json', accountJson]
+
+    if (options.windowSlots !== undefined && options.windowSlot !== undefined) {
+      appendSidecarWindowLayoutCliArgs(sidecarArgs, {
+        windowSlot: options.windowSlot,
+        windowSlots: options.windowSlots,
+      })
+    }
+
     const command: Command<Uint8Array> = Command.sidecar(
       BROWARD_ENROLLMENT_SIDECAR_NAME,
-      ['--account-json', accountJson],
+      sidecarArgs,
       spawnOptions,
     )
 

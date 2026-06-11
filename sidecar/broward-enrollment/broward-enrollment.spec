@@ -1,9 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
 from PyInstaller.utils.hooks import collect_all
+
+spec_dir = os.path.dirname(os.path.abspath(SPEC))
+shared_dir = os.path.join(spec_dir, '..', '_shared')
 
 datas = []
 binaries = []
-hiddenimports = ['broward_signup_flow', 'capsolver_client', 'httpx']
+hiddenimports = ['broward_signup_flow', 'capsolver_client', 'httpx', 'nodriver_window_layout']
 
 for package in ('nodriver', 'websockets', 'asyncio', 'httpx'):
     tmp_ret = collect_all(package)
@@ -13,7 +17,7 @@ for package in ('nodriver', 'websockets', 'asyncio', 'httpx'):
 
 a = Analysis(
     ['main.py'],
-    pathex=[],
+    pathex=[shared_dir],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,

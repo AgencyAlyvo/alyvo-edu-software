@@ -4,6 +4,10 @@ export type BrowardStudentIdOptions = {
   email: string
   password: string
   birthday: string
+  /** Slot fenetre Chrome (0-based) dans la vague parallele. */
+  windowSlot?: number
+  /** Nombre d'instances Chrome simultanees pour le placement fenetre. */
+  windowSlots?: number
 }
 
 /** Resultat succes sidecar Student ID. */
